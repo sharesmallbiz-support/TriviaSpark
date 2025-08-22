@@ -99,6 +99,41 @@ export default function EventGenerator() {
               </p>
             </div>
             
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              {generatedEvent.event.eventDate && (
+                <div>
+                  <p className="text-sm text-gray-500">Date</p>
+                  <p className="font-medium" data-testid="text-event-date">
+                    {new Date(generatedEvent.event.eventDate).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
+              {generatedEvent.event.eventTime && (
+                <div>
+                  <p className="text-sm text-gray-500">Time</p>
+                  <p className="font-medium" data-testid="text-event-time">
+                    {generatedEvent.event.eventTime}
+                  </p>
+                </div>
+              )}
+              {generatedEvent.event.location && (
+                <div>
+                  <p className="text-sm text-gray-500">Location</p>
+                  <p className="font-medium" data-testid="text-event-location">
+                    {generatedEvent.event.location}
+                  </p>
+                </div>
+              )}
+              {generatedEvent.event.sponsoringOrganization && (
+                <div>
+                  <p className="text-sm text-gray-500">Sponsor</p>
+                  <p className="font-medium" data-testid="text-event-sponsor">
+                    {generatedEvent.event.sponsoringOrganization}
+                  </p>
+                </div>
+              )}
+            </div>
+            
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary" data-testid="badge-event-type">
                 {generatedEvent.event.eventType.replace('_', ' ')}
@@ -108,6 +143,9 @@ export default function EventGenerator() {
               </Badge>
               <Badge variant="default" data-testid="badge-question-count">
                 {generatedEvent.questions.length} Questions
+              </Badge>
+              <Badge variant="default" className="bg-emerald-100 text-emerald-800" data-testid="badge-status">
+                Active
               </Badge>
             </div>
             

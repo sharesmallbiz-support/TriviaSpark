@@ -132,6 +132,10 @@ export class MemStorage implements IStorage {
       maxParticipants: insertEvent.maxParticipants || null,
       difficulty: insertEvent.difficulty || null,
       settings: insertEvent.settings || {},
+      eventDate: insertEvent.eventDate || null,
+      eventTime: insertEvent.eventTime || null,
+      location: insertEvent.location || null,
+      sponsoringOrganization: insertEvent.sponsoringOrganization || null,
     };
     this.events.set(id, event);
     return event;

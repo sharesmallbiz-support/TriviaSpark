@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,13 @@ import { questionGenerationSchema, type QuestionGenerationRequest } from "@share
 
 export default function QuestionGenerator() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
+
+  // Fetch events for selection
+  const { data: events } = useQuery<any[]>({
+    queryKey: ["/api/events"],
+  });
 
   const {
     register,
@@ -24,6 +30,7 @@ export default function QuestionGenerator() {
   } = useForm<QuestionGenerationRequest>({
     resolver: zodResolver(questionGenerationSchema),
     defaultValues: {
+      eventId: "",
       type: "multiple_choice",
       difficulty: "medium",
       count: 1,
@@ -49,9 +56,11 @@ export default function QuestionGenerator() {
     },
     onSuccess: (data) => {
       setGeneratedQuestions(data.questions);
+      // Invalidate event queries to refresh question lists
+      queryClient.invalidateQueries({ queryKey: ["/api/events"] });
       toast({
         title: "Questions Generated!",
-        description: `Created ${data.questions.length} AI-powered question(s).`,
+        description: `Added ${data.questions.length} question(s) to the event.`,
       });
     },
     onError: (error) => {
@@ -83,6 +92,29 @@ export default function QuestionGenerator() {
       
       <CardContent className="p-6">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <Label htmlFor="eventId" data-testid="label-event">Select Event</Label>
+              <Select onValueChange={(value) => setValue("eventId", value)} data-testid="select-event">
+                <SelectTrigger className={errors.eventId ? "border-red-500" : ""}>
+                  <SelectValue placeholder="Choose an event to add questions to" />
+                </SelectTrigger>
+                <SelectContent>
+                  {events?.map((event) => (
+                    <SelectItem key={event.id} value={event.id}>
+                      {event.title} ({event.status})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.eventId && (
+                <p className="text-sm text-red-500 mt-1" data-testid="error-event">
+                  {errors.eventId.message}
+                </p>
+              )}
+            </div>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="topic" data-testid="label-topic">Topic</Label>

@@ -22,6 +22,10 @@ export const events = pgTable("events", {
   difficulty: text("difficulty").default("mixed"), // easy, medium, hard, mixed
   status: text("status").default("draft"), // draft, active, completed, cancelled
   qrCode: text("qr_code"),
+  eventDate: timestamp("event_date"),
+  eventTime: text("event_time"),
+  location: text("location"),
+  sponsoringOrganization: text("sponsoring_organization"),
   settings: json("settings").default({}), // theme, timing, etc.
   createdAt: timestamp("created_at").defaultNow().notNull(),
   startedAt: timestamp("started_at"),
@@ -116,6 +120,7 @@ export type EventGenerationRequest = z.infer<typeof eventGenerationSchema>;
 
 // Question generation request schema
 export const questionGenerationSchema = z.object({
+  eventId: z.string().min(1, "Event ID is required"),
   topic: z.string().min(1, "Topic is required"),
   type: z.enum(["multiple_choice", "true_false", "fill_blank", "image"]),
   difficulty: z.enum(["easy", "medium", "hard"]).optional(),

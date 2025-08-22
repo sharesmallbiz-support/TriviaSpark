@@ -12,6 +12,10 @@ export class OpenAIService {
     description: string;
     questions: Omit<InsertQuestion, 'eventId'>[];
     settings: any;
+    eventDate?: string;
+    eventTime?: string;
+    location?: string;
+    sponsoringOrganization?: string;
   }> {
     const prompt = `Create a comprehensive trivia event based on the following requirements:
 
@@ -25,6 +29,7 @@ Generate a complete trivia event with:
 2. A detailed description
 3. 10-15 questions appropriate for the event type and difficulty
 4. Event settings including theme and timing
+5. Suggested event date, time, location, and sponsoring organization
 
 For wine dinner events, focus on wine knowledge, regions, tasting notes, and vineyard history.
 For corporate events, include team-building elements and company culture topics.
@@ -36,6 +41,10 @@ Respond with JSON in this format:
 {
   "title": "Event Title",
   "description": "Detailed event description",
+  "eventDate": "2025-01-15",
+  "eventTime": "7:00 PM",
+  "location": "Suggested venue name",
+  "sponsoringOrganization": "Suggested sponsor or host organization",
   "questions": [
     {
       "type": "multiple_choice|true_false|fill_blank",

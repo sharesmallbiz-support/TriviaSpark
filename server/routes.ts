@@ -87,7 +87,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         maxParticipants: validatedRequest.participants,
         difficulty: validatedRequest.difficulty,
         settings: generatedContent.settings,
-        status: "draft" as const,
+        status: "active" as const,
+        eventDate: generatedContent.eventDate ? new Date(generatedContent.eventDate) : null,
+        eventTime: generatedContent.eventTime || null,
+        location: generatedContent.location || null,
+        sponsoringOrganization: generatedContent.sponsoringOrganization || null,
       };
       
       const event = await storage.createEvent(eventData);
@@ -114,14 +118,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Generate questions with AI
+  // Generate questions with AI for existing events
   app.post("/api/questions/generate", async (req, res) => {
     try {
       const validatedRequest = questionGenerationSchema.parse(req.body);
       
+      // Verify event exists
+      const event = await storage.getEvent(validatedRequest.eventId);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      
       const questions = await openAIService.generateQuestions(validatedRequest);
       
-      res.json({ questions });
+      // Store generated questions in the event
+      const existingQuestions = await storage.getQuestionsByEvent(validatedRequest.eventId);
+      const questionsWithEventId = questions.map((q, index) => ({
+        ...q,
+        eventId: validatedRequest.eventId,
+        orderIndex: existingQuestions.length + index
+      }));
+      
+      const storedQuestions = await storage.createQuestions(questionsWithEventId);
+      
+      res.json({ questions: storedQuestions });
     } catch (error) {
       console.error("Error generating questions:", error);
       if (error instanceof z.ZodError) {

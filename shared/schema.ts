@@ -1,0 +1,126 @@
+import { sql } from "drizzle-orm";
+import { pgTable, text, varchar, integer, timestamp, json, boolean } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  fullName: text("full_name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const events = pgTable("events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description"),
+  hostId: varchar("host_id").notNull().references(() => users.id),
+  eventType: text("event_type").notNull(), // wine_dinner, corporate, party, educational, fundraiser
+  maxParticipants: integer("max_participants").default(50),
+  difficulty: text("difficulty").default("mixed"), // easy, medium, hard, mixed
+  status: text("status").default("draft"), // draft, active, completed, cancelled
+  qrCode: text("qr_code"),
+  settings: json("settings").default({}), // theme, timing, etc.
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+});
+
+export const questions = pgTable("questions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").notNull().references(() => events.id),
+  type: text("type").notNull(), // multiple_choice, true_false, fill_blank, image
+  question: text("question").notNull(),
+  options: json("options").default([]), // array of answer options
+  correctAnswer: text("correct_answer").notNull(),
+  points: integer("points").default(100),
+  timeLimit: integer("time_limit").default(30), // seconds
+  difficulty: text("difficulty").default("medium"),
+  category: text("category"),
+  aiGenerated: boolean("ai_generated").default(false),
+  orderIndex: integer("order_index").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const participants = pgTable("participants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").notNull().references(() => events.id),
+  name: text("name").notNull(),
+  teamName: text("team_name"),
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  isActive: boolean("is_active").default(true),
+});
+
+export const responses = pgTable("responses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  participantId: varchar("participant_id").notNull().references(() => participants.id),
+  questionId: varchar("question_id").notNull().references(() => questions.id),
+  answer: text("answer").notNull(),
+  isCorrect: boolean("is_correct").notNull(),
+  points: integer("points").default(0),
+  responseTime: integer("response_time"), // seconds taken to answer
+  submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+});
+
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertEventSchema = createInsertSchema(events).omit({
+  id: true,
+  createdAt: true,
+  startedAt: true,
+  completedAt: true,
+  qrCode: true,
+});
+
+export const insertQuestionSchema = createInsertSchema(questions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertParticipantSchema = createInsertSchema(participants).omit({
+  id: true,
+  joinedAt: true,
+});
+
+export const insertResponseSchema = createInsertSchema(responses).omit({
+  id: true,
+  submittedAt: true,
+});
+
+export type User = typeof users.$inferSelect;
+export type Event = typeof events.$inferSelect;
+export type Question = typeof questions.$inferSelect;
+export type Participant = typeof participants.$inferSelect;
+export type Response = typeof responses.$inferSelect;
+
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertEvent = z.infer<typeof insertEventSchema>;
+export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
+export type InsertParticipant = z.infer<typeof insertParticipantSchema>;
+export type InsertResponse = z.infer<typeof insertResponseSchema>;
+
+// Event generation request schema
+export const eventGenerationSchema = z.object({
+  description: z.string().min(10, "Description must be at least 10 characters"),
+  eventType: z.enum(["wine_dinner", "corporate", "party", "educational", "fundraiser"]),
+  participants: z.number().min(1).max(500),
+  difficulty: z.enum(["easy", "medium", "hard", "mixed"]),
+});
+
+export type EventGenerationRequest = z.infer<typeof eventGenerationSchema>;
+
+// Question generation request schema
+export const questionGenerationSchema = z.object({
+  topic: z.string().min(1, "Topic is required"),
+  type: z.enum(["multiple_choice", "true_false", "fill_blank", "image"]),
+  difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+  category: z.string().optional(),
+  count: z.number().min(1).max(20).default(1),
+});
+
+export type QuestionGenerationRequest = z.infer<typeof questionGenerationSchema>;

@@ -88,6 +88,80 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
     };
     this.users.set(markUser.id, markUser);
+    
+    // Create seeded event for Mark
+    const seedEventId = "seed-event-coast-to-cascades";
+    const seedEvent: Event = {
+      id: seedEventId,
+      title: "Coast to Cascades Wine & Trivia Evening",
+      description: "An elegant evening combining Pacific Northwest wines with engaging trivia, supporting West Wichita Rotary Club's community initiatives.",
+      hostId: "mark-user-id",
+      eventType: "wine-dinner",
+      status: "draft",
+      qrCode: "rotary-cascades-2025",
+      maxParticipants: 50,
+      difficulty: "medium",
+      settings: {},
+      eventDate: new Date("2025-02-15"),
+      eventTime: "6:30 PM",
+      location: "Riverside Conference Center",
+      sponsoringOrganization: "West Wichita Rotary Club",
+      createdAt: new Date(),
+      startedAt: null,
+      completedAt: null,
+    };
+    this.events.set(seedEventId, seedEvent);
+    
+    // Create sample questions for the seeded event
+    const questions: Question[] = [
+      {
+        id: "q1-wine-regions",
+        eventId: seedEventId,
+        type: "multiple-choice",
+        question: "Which Pacific Northwest wine region is known as Oregon's premier Pinot Noir producing area?",
+        options: ["Willamette Valley", "Columbia Valley", "Walla Walla Valley", "Yakima Valley"],
+        correctAnswer: "Willamette Valley",
+        difficulty: "medium",
+        category: "wine",
+        points: 100,
+        timeLimit: 30,
+        orderIndex: 1,
+        aiGenerated: false,
+        createdAt: new Date(),
+      },
+      {
+        id: "q2-rotary-service",
+        eventId: seedEventId,
+        type: "multiple-choice",
+        question: "What is Rotary International's primary focus in community service?",
+        options: ["Environmental conservation", "Education and literacy", "Service Above Self", "Economic development"],
+        correctAnswer: "Service Above Self",
+        difficulty: "medium",
+        category: "rotary",
+        points: 100,
+        timeLimit: 30,
+        orderIndex: 2,
+        aiGenerated: false,
+        createdAt: new Date(),
+      },
+      {
+        id: "q3-pacific-northwest",
+        eventId: seedEventId,
+        type: "multiple-choice",
+        question: "Mount Rainier, the iconic peak visible from Seattle, reaches what elevation?",
+        options: ["12,330 feet", "14,411 feet", "16,050 feet", "11,249 feet"],
+        correctAnswer: "14,411 feet",
+        difficulty: "medium",
+        category: "geography",
+        points: 100,
+        timeLimit: 30,
+        orderIndex: 3,
+        aiGenerated: false,
+        createdAt: new Date(),
+      },
+    ];
+    
+    questions.forEach(q => this.questions.set(q.id, q));
   }
 
   async getUser(id: string): Promise<User | undefined> {

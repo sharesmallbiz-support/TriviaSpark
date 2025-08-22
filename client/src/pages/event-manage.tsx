@@ -99,23 +99,39 @@ function EventManage() {
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors, isDirty }
-  } = useForm<EventFormData>();
+  } = useForm<EventFormData>({
+    defaultValues: {
+      title: "",
+      description: "",
+      eventType: "",
+      maxParticipants: 50,
+      difficulty: "medium",
+      eventDate: "",
+      eventTime: "",
+      location: "",
+      sponsoringOrganization: ""
+    }
+  });
 
   // Populate form when event loads
   useEffect(() => {
     if (event) {
-      setValue("title", event.title);
-      setValue("description", event.description);
-      setValue("eventType", event.eventType);
-      setValue("maxParticipants", event.maxParticipants);
-      setValue("difficulty", event.difficulty);
-      setValue("eventDate", event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : "");
-      setValue("eventTime", event.eventTime || "");
-      setValue("location", event.location || "");
-      setValue("sponsoringOrganization", event.sponsoringOrganization || "");
+      const formData: EventFormData = {
+        title: event.title || "",
+        description: event.description || "",
+        eventType: event.eventType || "",
+        maxParticipants: event.maxParticipants || 50,
+        difficulty: event.difficulty || "medium",
+        eventDate: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : "",
+        eventTime: event.eventTime || "",
+        location: event.location || "",
+        sponsoringOrganization: event.sponsoringOrganization || ""
+      };
+      reset(formData);
     }
-  }, [event, setValue]);
+  }, [event, reset]);
 
   // Update event mutation
   const updateEventMutation = useMutation({
@@ -354,8 +370,8 @@ function EventManage() {
                     <div>
                       <Label htmlFor="eventType">Event Type *</Label>
                       <Select
-                        value={watch("eventType")}
-                        onValueChange={(value) => setValue("eventType", value)}
+                        value={watch("eventType") || ""}
+                        onValueChange={(value) => setValue("eventType", value, { shouldDirty: true })}
                       >
                         <SelectTrigger className="mt-1" data-testid="select-event-type">
                           <SelectValue placeholder="Select event type" />
@@ -373,8 +389,8 @@ function EventManage() {
                     <div>
                       <Label htmlFor="difficulty">Difficulty</Label>
                       <Select
-                        value={watch("difficulty")}
-                        onValueChange={(value) => setValue("difficulty", value)}
+                        value={watch("difficulty") || ""}
+                        onValueChange={(value) => setValue("difficulty", value, { shouldDirty: true })}
                       >
                         <SelectTrigger className="mt-1" data-testid="select-difficulty">
                           <SelectValue placeholder="Select difficulty" />
@@ -396,7 +412,8 @@ function EventManage() {
                         {...register("maxParticipants", { 
                           required: "Max participants is required",
                           min: { value: 1, message: "Must be at least 1" },
-                          max: { value: 500, message: "Maximum 500 participants" }
+                          max: { value: 500, message: "Maximum 500 participants" },
+                          valueAsNumber: true
                         })}
                         className="mt-1"
                         data-testid="input-max-participants"

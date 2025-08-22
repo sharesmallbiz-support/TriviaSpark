@@ -235,6 +235,15 @@ export class MemStorage implements IStorage {
     return updatedEvent;
   }
 
+  async updateEventStatus(id: string, status: string): Promise<Event | undefined> {
+    const event = this.events.get(id);
+    if (!event) return undefined;
+    
+    const updatedEvent = { ...event, status };
+    this.events.set(id, updatedEvent);
+    return updatedEvent;
+  }
+
   async getQuestionsByEvent(eventId: string): Promise<Question[]> {
     return Array.from(this.questions.values())
       .filter(question => question.eventId === eventId)

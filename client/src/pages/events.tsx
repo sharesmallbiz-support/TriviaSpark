@@ -196,16 +196,32 @@ export default function EventManagement() {
                       >
                         <CardContent className="p-4">
                           <div className="flex items-start justify-between mb-2">
-                            <h3 className="font-semibold text-wine-800 text-lg" data-testid={`text-event-title-${event.id}`}>
-                              {event.title}
-                            </h3>
-                            <Badge 
-                              variant={event.status === 'active' ? 'default' : 'secondary'}
-                              className={event.status === 'active' ? 'bg-emerald-100 text-emerald-800' : ''}
-                              data-testid={`badge-status-${event.id}`}
-                            >
-                              {event.status}
-                            </Badge>
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-wine-800 text-lg" data-testid={`text-event-title-${event.id}`}>
+                                {event.title}
+                              </h3>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge 
+                                variant={event.status === 'active' ? 'default' : 'secondary'}
+                                className={event.status === 'active' ? 'bg-emerald-100 text-emerald-800' : ''}
+                                data-testid={`badge-status-${event.id}`}
+                              >
+                                {event.status}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setLocation(`/events/${event.id}/manage`);
+                                }}
+                                className="text-xs"
+                                data-testid={`button-manage-${event.id}`}
+                              >
+                                Manage
+                              </Button>
+                            </div>
                           </div>
                           <p className="text-gray-600 text-sm mb-3" data-testid={`text-event-description-${event.id}`}>
                             {event.description}

@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Login from "@/pages/login";
 import Events from "@/pages/events";
+import EventManage from "@/pages/event-manage";
 import Dashboard from "@/pages/dashboard";
 import EventHost from "@/pages/event-host";
 import EventJoin from "@/pages/event-join";
@@ -21,6 +22,7 @@ function Router() {
           <Route path="/" component={Home} />
           <Route path="/login" component={Login} />
           <Route path="/events" component={Events} />
+          <Route path="/events/:id/manage" component={EventManage} />
           <Route path="/dashboard">
             <Header />
             <Dashboard />

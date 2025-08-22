@@ -14,11 +14,11 @@ function generateSessionId(): string {
 
 function cleanupSessions() {
   const now = Date.now();
-  for (const [sessionId, session] of sessions.entries()) {
+  Array.from(sessions.entries()).forEach(([sessionId, session]) => {
     if (session.expiresAt < now) {
       sessions.delete(sessionId);
     }
-  }
+  });
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -407,6 +407,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error starting event:", error);
       res.status(500).json({ error: "Failed to start event" });
+    }
+  });
+
+  // Get single event
+  app.get("/api/events/:id", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+      
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const eventId = req.params.id;
+      const event = await storage.getEvent(eventId);
+      
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      
+      // Check if user owns this event
+      if (event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      res.json(event);
+    } catch (error) {
+      console.error("Error fetching event:", error);
+      res.status(500).json({ error: "Failed to fetch event" });
+    }
+  });
+
+  // Update event
+  app.put("/api/events/:id", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+      
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const eventId = req.params.id;
+      const event = await storage.getEvent(eventId);
+      
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      
+      // Check if user owns this event
+      if (event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const updatedEvent = await storage.updateEvent(eventId, req.body);
+      res.json(updatedEvent);
+    } catch (error) {
+      console.error("Error updating event:", error);
+      res.status(500).json({ error: "Failed to update event" });
+    }
+  });
+
+  // Update event status
+  app.patch("/api/events/:id/status", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+      
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const eventId = req.params.id;
+      const { status } = req.body;
+      
+      if (!eventId || !status) {
+        return res.status(400).json({ error: "Event ID and status are required" });
+      }
+      
+      const event = await storage.getEvent(eventId);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      
+      // Check if user owns this event
+      if (event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const updatedEvent = await storage.updateEventStatus(eventId, status);
+      res.json(updatedEvent);
+    } catch (error) {
+      console.error("Error updating event status:", error);
+      res.status(500).json({ error: "Failed to update event status" });
+    }
+  });
+
+  // Get questions for an event
+  app.get("/api/events/:id/questions", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+      
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const eventId = req.params.id;
+      const event = await storage.getEvent(eventId);
+      
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      
+      // Check if user owns this event
+      if (event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const questions = await storage.getQuestionsByEvent(eventId);
+      res.json(questions);
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+      res.status(500).json({ error: "Failed to fetch questions" });
     }
   });
 

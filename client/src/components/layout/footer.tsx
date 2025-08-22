@@ -24,7 +24,7 @@ export default function Footer() {
               that transform any gathering into lasting memories.
             </p>
             <p className="text-sm text-gray-500" data-testid="text-footer-credit">
-              Created by Mark Hazleton • © 2024 WebSpark Solutions
+              Created by Mark Hazleton • © 2025 Mark Hazleton
             </p>
           </div>
           

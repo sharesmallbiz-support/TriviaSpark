@@ -77,6 +77,17 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
     };
     this.users.set(demoUser.id, demoUser);
+    
+    // Add Mark user for login
+    const markUser: User = {
+      id: "mark-user-id",
+      username: "mark",
+      email: "mark@triviaspark.com",
+      password: "mark123",
+      fullName: "Mark Hazleton",
+      createdAt: new Date(),
+    };
+    this.users.set(markUser.id, markUser);
   }
 
   async getUser(id: string): Promise<User | undefined> {

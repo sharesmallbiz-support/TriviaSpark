@@ -5,7 +5,25 @@ import { openAIService } from "./openai";
 import { eventGenerationSchema, questionGenerationSchema, insertEventSchema, insertParticipantSchema } from "@shared/schema";
 import { z } from "zod";
 
+// Simple session store
+const sessions = new Map<string, { userId: string; expiresAt: number }>();
+
+function generateSessionId(): string {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
+function cleanupSessions() {
+  const now = Date.now();
+  for (const [sessionId, session] of sessions.entries()) {
+    if (session.expiresAt < now) {
+      sessions.delete(sessionId);
+    }
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Clean up expired sessions every hour
+  setInterval(cleanupSessions, 60 * 60 * 1000);
   // Get dashboard stats
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
@@ -29,8 +47,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get events for host
   app.get("/api/events", async (req, res) => {
     try {
-      const hostId = "demo-user-id";
-      const events = await storage.getEventsByHost(hostId);
+      // Get authenticated user's events
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+      
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const events = await storage.getEventsByHost(session.userId);
       res.json(events);
     } catch (error) {
       console.error("Error fetching events:", error);
@@ -41,8 +66,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get active events
   app.get("/api/events/active", async (req, res) => {
     try {
-      const hostId = "demo-user-id";
-      const events = await storage.getActiveEvents(hostId);
+      // Get authenticated user's active events
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+      
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const events = await storage.getActiveEvents(session.userId);
       res.json(events);
     } catch (error) {
       console.error("Error fetching active events:", error);
@@ -53,9 +85,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create event manually
   app.post("/api/events", async (req, res) => {
     try {
+      // Get authenticated user
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+      
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
       const validatedData = insertEventSchema.parse({
         ...req.body,
-        hostId: "demo-user-id"
+        hostId: session.userId
       });
       
       const event = await storage.createEvent(validatedData);
@@ -79,10 +119,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const generatedContent = await openAIService.generateEvent(validatedRequest);
       
       // Create the event
+      // Get authenticated user
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+      
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
       const eventData = {
         title: generatedContent.title,
         description: generatedContent.description,
-        hostId: "demo-user-id",
+        hostId: session.userId,
         eventType: validatedRequest.eventType,
         maxParticipants: validatedRequest.participants,
         difficulty: validatedRequest.difficulty,
@@ -268,6 +316,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error submitting response:", error);
       res.status(500).json({ error: "Failed to submit response" });
+    }
+  });
+
+  // Authentication routes
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required" });
+      }
+      
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user || user.password !== password) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      // Create session
+      const sessionId = generateSessionId();
+      const expiresAt = Date.now() + (24 * 60 * 60 * 1000); // 24 hours
+      sessions.set(sessionId, { userId: user.id, expiresAt });
+      
+      res.cookie('sessionId', sessionId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      });
+      
+      res.json({
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          fullName: user.fullName
+        }
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+  
+  app.post("/api/auth/logout", async (req, res) => {
+    const sessionId = req.cookies.sessionId;
+    if (sessionId) {
+      sessions.delete(sessionId);
+    }
+    res.clearCookie('sessionId');
+    res.json({ success: true });
+  });
+  
+  app.get("/api/auth/me", async (req, res) => {
+    const sessionId = req.cookies.sessionId;
+    const session = sessionId ? sessions.get(sessionId) : null;
+    
+    if (!session || session.expiresAt < Date.now()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    const user = await storage.getUser(session.userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    res.json({
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName
+      }
+    });
+  });
+
+  // Start event
+  app.post("/api/events/:id/start", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+      
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const eventId = req.params.id;
+      const updatedEvent = await storage.updateEventStatus(eventId, "active");
+      res.json(updatedEvent);
+    } catch (error) {
+      console.error("Error starting event:", error);
+      res.status(500).json({ error: "Failed to start event" });
     }
   });
 

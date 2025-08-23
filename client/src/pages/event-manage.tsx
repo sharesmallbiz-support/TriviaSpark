@@ -59,6 +59,7 @@ type Question = {
   points: number;
   timeLimit: number;
   orderIndex: number;
+  aiGenerated?: boolean;
 };
 
 type EventFormData = {
@@ -88,6 +89,7 @@ function EventManage() {
   const [finalCountdown, setFinalCountdown] = useState(0); // 0 = no countdown, 1-3 = countdown number
   const [answersLocked, setAnswersLocked] = useState(false);
   const [timerActive, setTimerActive] = useState(false);
+  const [viewMode, setViewMode] = useState<'both' | 'presenter' | 'participant'>('both');
 
   const eventId = params?.id;
 
@@ -409,15 +411,21 @@ function EventManage() {
   useEffect(() => {
     let interval: NodeJS.Timeout;
 
-    if (timerActive && timeLeft > 0 && !showAnswer && finalCountdown === 0) {
+    if (timerActive && timeLeft > 0 && !showAnswer) {
       interval = setInterval(() => {
         setTimeLeft(prev => {
-          if (prev <= 4 && prev > 1) {
-            // Start final countdown at 3 seconds
-            setFinalCountdown(prev - 1);
+          if (prev === 4) {
+            // Start final countdown at 3
+            setFinalCountdown(3);
+            return prev - 1;
+          } else if (prev === 3) {
+            setFinalCountdown(2);
+            return prev - 1;
+          } else if (prev === 2) {
+            setFinalCountdown(1);
             return prev - 1;
           } else if (prev === 1) {
-            // Time's up
+            // Time's up - lock answers and show answer
             setTimerActive(false);
             setAnswersLocked(true);
             setShowAnswer(true);
@@ -432,7 +440,7 @@ function EventManage() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [timerActive, timeLeft, showAnswer, finalCountdown]);
+  }, [timerActive, timeLeft, showAnswer]);
 
   // Reset final countdown when it reaches 0
   useEffect(() => {
@@ -1083,101 +1091,128 @@ function EventManage() {
 
           {/* Dry Run Tab */}
           <TabsContent value="dryrun">
-            <Card className="trivia-card" data-testid="card-dry-run">
-              <CardHeader>
-                <CardTitle className="wine-text">
-                  Dry Run - Test Your Trivia
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+            <div className="space-y-4">
+              {/* View Mode Selector */}
+              <Card className="trivia-card">
+                <CardHeader>
+                  <CardTitle className="wine-text flex items-center justify-between">
+                    <span>Dry Run - Test Your Trivia</span>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={viewMode === 'both' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setViewMode('both')}
+                        data-testid="button-view-both"
+                      >
+                        Split View
+                      </Button>
+                      <Button
+                        variant={viewMode === 'presenter' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setViewMode('presenter')}
+                        data-testid="button-view-presenter"
+                      >
+                        Presenter
+                      </Button>
+                      <Button
+                        variant={viewMode === 'participant' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setViewMode('participant')}
+                        data-testid="button-view-participant"
+                      >
+                        Participant
+                      </Button>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                 {!dryRunActive ? (
-                  <div className="text-center space-y-4">
-                    <p className="text-gray-600">
-                      Preview your trivia questions as participants would see them.
-                      {questions.length === 0 && " Add some questions first!"}
-                    </p>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <p className="text-sm font-medium mb-2">Questions in this event:</p>
-                      <p className="text-2xl font-bold text-wine-700" data-testid="text-question-count">
-                        {questions.length}
+                    <div className="text-center space-y-4">
+                      <p className="text-gray-600">
+                        Preview your trivia questions as participants would see them.
+                        {questions.length === 0 && " Add some questions first!"}
                       </p>
-                    </div>
-                    <Button
-                      onClick={startDryRun}
-                      disabled={questions.length === 0}
-                      className="trivia-button-primary"
-                      data-testid="button-start-dry-run"
-                    >
-                      <Play className="mr-2 h-4 w-4" />
-                      Start Dry Run
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <Badge variant="default" className="bg-blue-100 text-blue-800" data-testid="badge-dry-run">
-                        Dry Run Active
-                      </Badge>
-                      <div className="text-sm text-gray-600" data-testid="text-question-progress">
-                        Question {currentQuestionIndex + 1} of {questions.length}
+                      <div className="bg-gray-50 p-4 rounded-lg">
+                        <p className="text-sm font-medium mb-2">Questions in this event:</p>
+                        <p className="text-2xl font-bold text-wine-700" data-testid="text-question-count">
+                          {questions.length}
+                        </p>
                       </div>
+                      <Button
+                        onClick={startDryRun}
+                        disabled={questions.length === 0}
+                        className="trivia-button-primary"
+                        data-testid="button-start-dry-run"
+                      >
+                        <Play className="mr-2 h-4 w-4" />
+                        Start Dry Run
+                      </Button>
                     </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Dry Run Header */}
+                      <div className="flex items-center justify-between">
+                        <Badge variant="default" className="bg-blue-100 text-blue-800" data-testid="badge-dry-run">
+                          Dry Run Active - {viewMode === 'both' ? 'Split View' : viewMode === 'presenter' ? 'Presenter View' : 'Participant View'}
+                        </Badge>
+                        <div className="text-sm text-gray-600" data-testid="text-question-progress">
+                          Question {currentQuestionIndex + 1} of {questions.length}
+                        </div>
+                      </div>
 
-                    {currentQuestion && (
-                      <div className="space-y-6">
-                        <div className="relative bg-white p-6 rounded-lg border-2 border-wine-200">
-                          <div className="flex items-center justify-between mb-4">
-                            <Badge variant="secondary" data-testid="badge-category">
-                              {currentQuestion.category}
-                            </Badge>
-                            <div className="flex items-center gap-4">
-                              <div className={`flex items-center text-sm ${timeLeft <= 10 ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
-                                <Clock className="mr-1 h-3 w-3" />
-                                {timeLeft}s
-                              </div>
-                              {answersLocked && (
-                                <Badge variant="destructive" className="bg-red-100 text-red-800" data-testid="badge-answers-locked">
-                                  🔒 Answers Locked
-                                </Badge>
-                              )}
-                            </div>
+                      {/* Dual View Layout */}
+                      {viewMode === 'both' && currentQuestion && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          {/* Presenter View */}
+                          <div className="space-y-4">
+                            <h4 className="text-lg font-semibold text-wine-700">👨‍🏫 Presenter View</h4>
+                            <PresenterView 
+                              question={currentQuestion} 
+                              timeLeft={timeLeft}
+                              finalCountdown={finalCountdown}
+                              showAnswer={showAnswer}
+                              answersLocked={answersLocked}
+                            />
                           </div>
-
-                          {/* Final Countdown Overlay */}
-                          {finalCountdown > 0 && (
-                            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10 rounded-lg">
-                              <div className="text-8xl font-bold text-white animate-pulse" data-testid={`countdown-${finalCountdown}`}>
-                                {finalCountdown}
-                              </div>
-                            </div>
-                          )}
                           
-                          <h3 className="text-xl font-semibold text-wine-800 mb-6" data-testid="text-question">
-                            {currentQuestion.question}
-                          </h3>
-
-                          <div className="space-y-3">
-                            {currentQuestion.options.map((option, index) => (
-                              <div
-                                key={index}
-                                className={`p-3 rounded-lg border transition-colors ${
-                                  showAnswer && option === currentQuestion.correctAnswer
-                                    ? 'bg-green-100 border-green-300'
-                                    : 'bg-gray-50 border-gray-200'
-                                }`}
-                                data-testid={`option-${index}`}
-                              >
-                                <span className="font-medium mr-2">{String.fromCharCode(65 + index)}.</span>
-                                {option}
-                                {showAnswer && option === currentQuestion.correctAnswer && (
-                                  <span className="ml-2 text-green-600 font-semibold">✓ Correct</span>
-                                )}
-                              </div>
-                            ))}
+                          {/* Participant View */}
+                          <div className="space-y-4">
+                            <h4 className="text-lg font-semibold text-wine-700">👥 Participant View</h4>
+                            <ParticipantView 
+                              question={currentQuestion} 
+                              timeLeft={timeLeft}
+                              finalCountdown={finalCountdown}
+                              showAnswer={showAnswer}
+                              answersLocked={answersLocked}
+                            />
                           </div>
                         </div>
+                      )}
 
-                        <div className="flex items-center justify-between">
+                      {/* Single View Layout */}
+                      {viewMode !== 'both' && currentQuestion && (
+                        viewMode === 'presenter' ? (
+                          <PresenterView 
+                            question={currentQuestion} 
+                            timeLeft={timeLeft}
+                            finalCountdown={finalCountdown}
+                            showAnswer={showAnswer}
+                            answersLocked={answersLocked}
+                          />
+                        ) : (
+                          <ParticipantView 
+                            question={currentQuestion} 
+                            timeLeft={timeLeft}
+                            finalCountdown={finalCountdown}
+                            showAnswer={showAnswer}
+                            answersLocked={answersLocked}
+                          />
+                        )
+                      )}
+
+                      {/* Dry Run Controls */}
+                      {currentQuestion && (
+                        <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
                           <div className="flex items-center gap-4">
                             <Button
                               onClick={toggleAnswer}
@@ -1219,15 +1254,166 @@ function EventManage() {
                             </Button>
                           </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
+    </div>
+  );
+}
+
+// Presenter View Component - Shows question with controls and answer
+function PresenterView({ question, timeLeft, finalCountdown, showAnswer, answersLocked }: {
+  question: Question;
+  timeLeft: number;
+  finalCountdown: number;
+  showAnswer: boolean;
+  answersLocked: boolean;
+}) {
+  return (
+    <div className="relative bg-white p-6 rounded-lg border-2 border-wine-200 shadow-sm">
+      {/* Timer and Status */}
+      <div className="flex items-center justify-between mb-4">
+        <Badge variant="secondary" data-testid="badge-presenter-category">
+          {question.category}
+        </Badge>
+        <div className="flex items-center gap-4">
+          <div className={`flex items-center text-sm ${timeLeft <= 10 ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
+            <Clock className="mr-1 h-3 w-3" />
+            {timeLeft}s
+          </div>
+          {answersLocked && (
+            <Badge variant="destructive" className="bg-red-100 text-red-800">
+              🔒 Locked
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {/* Final Countdown Overlay */}
+      {finalCountdown > 0 && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10 rounded-lg">
+          <div className="text-6xl font-bold text-white animate-pulse" data-testid={`presenter-countdown-${finalCountdown}`}>
+            {finalCountdown}
+          </div>
+        </div>
+      )}
+      
+      {/* Question */}
+      <h3 className="text-lg font-semibold text-wine-800 mb-4" data-testid="presenter-question">
+        {question.question}
+      </h3>
+
+      {/* Options with Answer Highlighting */}
+      <div className="space-y-2">
+        {question.options.map((option, index) => (
+          <div
+            key={index}
+            className={`p-3 rounded-lg border text-sm transition-colors ${
+              showAnswer && option === question.correctAnswer
+                ? 'bg-green-100 border-green-300 font-medium'
+                : 'bg-gray-50 border-gray-200'
+            }`}
+            data-testid={`presenter-option-${index}`}
+          >
+            <span className="font-medium mr-2">{String.fromCharCode(65 + index)}.</span>
+            {option}
+            {showAnswer && option === question.correctAnswer && (
+              <span className="ml-2 text-green-600 font-semibold">✓ Correct Answer</span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Answer Revealed Indicator */}
+      {showAnswer && (
+        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div className="text-sm font-medium text-green-800">
+            📱 Answer is now visible to participants
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Participant View Component - Shows what players see during the game
+function ParticipantView({ question, timeLeft, finalCountdown, showAnswer, answersLocked }: {
+  question: Question;
+  timeLeft: number;
+  finalCountdown: number;
+  showAnswer: boolean;
+  answersLocked: boolean;
+}) {
+  return (
+    <div className="relative bg-gradient-to-br from-wine-50 to-champagne-50 p-6 rounded-lg border-2 border-wine-200 shadow-sm">
+      {/* Game Header */}
+      <div className="text-center mb-4">
+        <div className="flex items-center justify-center gap-4 mb-2">
+          <Badge variant="outline" className="border-wine-300 text-wine-700">
+            {question.category}
+          </Badge>
+          <div className={`text-lg font-bold ${timeLeft <= 10 ? 'text-red-600' : 'text-wine-600'}`}>
+            ⏰ {timeLeft}s
+          </div>
+        </div>
+      </div>
+
+      {/* Final Countdown Overlay */}
+      {finalCountdown > 0 && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10 rounded-lg">
+          <div className="text-6xl font-bold text-white animate-pulse" data-testid={`participant-countdown-${finalCountdown}`}>
+            {finalCountdown}
+          </div>
+        </div>
+      )}
+
+      {/* Question */}
+      <div className="text-center mb-6">
+        <h3 className="text-lg font-semibold text-wine-800" data-testid="participant-question">
+          {question.question}
+        </h3>
+      </div>
+
+      {/* Interactive Options */}
+      <div className="space-y-3">
+        {question.options.map((option, index) => (
+          <button
+            key={index}
+            disabled={answersLocked}
+            className={`w-full p-4 rounded-lg border-2 text-left transition-all duration-200 ${
+              answersLocked
+                ? showAnswer && option === question.correctAnswer
+                  ? 'bg-green-100 border-green-400 text-green-800 font-medium'
+                  : 'bg-gray-100 border-gray-300 text-gray-600'
+                : 'bg-white border-wine-200 hover:border-wine-300 hover:bg-wine-50 cursor-pointer'
+            }`}
+            data-testid={`participant-option-${index}`}
+          >
+            <span className="inline-block w-8 h-8 rounded-full bg-wine-200 text-wine-800 font-bold text-center leading-8 mr-3">
+              {String.fromCharCode(65 + index)}
+            </span>
+            {option}
+            {showAnswer && option === question.correctAnswer && (
+              <span className="float-right text-green-600 font-bold text-xl">✓</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Locked State Message */}
+      {answersLocked && (
+        <div className="mt-4 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 border border-red-200 rounded-full text-red-800 font-medium">
+            🔒 Time's Up! Answers Locked
+          </div>
+        </div>
+      )}
     </div>
   );
 }

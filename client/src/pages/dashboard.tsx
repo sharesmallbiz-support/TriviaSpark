@@ -4,6 +4,7 @@ import EventGenerator from "@/components/ai/event-generator";
 import QuestionGenerator from "@/components/ai/question-generator";
 import ActiveEvents from "@/components/events/active-events";
 import RecentEvents from "@/components/events/recent-events";
+import UpcomingEvents from "@/components/events/upcoming-events";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Brain, QrCode, Copy, Calendar, Lightbulb, TrendingUp } from "lucide-react";
@@ -94,6 +95,9 @@ export default function Dashboard() {
         <div className="space-y-6">
           {/* Active Events */}
           <ActiveEvents />
+
+          {/* Upcoming Events */}
+          <UpcomingEvents />
 
           {/* Recent Events */}
           <RecentEvents />

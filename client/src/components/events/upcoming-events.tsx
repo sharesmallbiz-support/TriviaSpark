@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WineIcon as Wine, Building, Cake, ChevronRight } from "lucide-react";
+import { WineIcon as Wine, Building, Cake, ChevronRight, Calendar } from "lucide-react";
 import { Link } from "wouter";
 
 const getEventIcon = (eventType: string) => {
@@ -33,37 +33,38 @@ const formatDate = (date: string | null) => {
   if (!date) return "No date set";
   const eventDate = new Date(date);
   const now = new Date();
-  const diffTime = Math.abs(now.getTime() - eventDate.getTime());
+  const diffTime = eventDate.getTime() - now.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays <= 7) return `${diffDays} days ago`;
-  if (diffDays <= 30) return `${Math.ceil(diffDays / 7)} week${Math.ceil(diffDays / 7) > 1 ? 's' : ''} ago`;
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Tomorrow";
+  if (diffDays <= 7) return `In ${diffDays} days`;
+  if (diffDays <= 30) return `In ${Math.ceil(diffDays / 7)} week${Math.ceil(diffDays / 7) > 1 ? 's' : ''}`;
   return eventDate.toLocaleDateString();
 };
 
-export default function RecentEvents() {
+export default function UpcomingEvents() {
   const { data: events, isLoading } = useQuery<any[]>({
     queryKey: ["/api/events"],
   });
 
-  // Filter events that have passed (recent events)
+  // Filter events that are in the future (upcoming events)
   const now = new Date();
-  const recentEvents = events?.filter(event => {
+  const upcomingEvents = events?.filter(event => {
     if (!event.eventDate) return false;
     const eventDate = new Date(event.eventDate);
-    return eventDate < now;
+    return eventDate >= now;
   }).sort((a, b) => {
     const dateA = new Date(a.eventDate);
     const dateB = new Date(b.eventDate);
-    return dateB.getTime() - dateA.getTime(); // Most recent first
+    return dateA.getTime() - dateB.getTime(); // Soonest first
   }).slice(0, 3) || [];
 
   if (isLoading) {
     return (
-      <Card className="trivia-card" data-testid="card-recent-events-loading">
+      <Card className="trivia-card" data-testid="card-upcoming-events-loading">
         <CardHeader>
-          <CardTitle data-testid="text-recent-events-title">Recent Events</CardTitle>
+          <CardTitle data-testid="text-upcoming-events-title">Upcoming Events</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
@@ -83,14 +84,17 @@ export default function RecentEvents() {
   }
 
   return (
-    <Card className="trivia-card" data-testid="card-recent-events">
+    <Card className="trivia-card" data-testid="card-upcoming-events">
       <CardHeader>
-        <CardTitle data-testid="text-recent-events-title">Recent Events</CardTitle>
+        <CardTitle className="flex items-center" data-testid="text-upcoming-events-title">
+          <Calendar className="text-blue-500 mr-2 h-5 w-5" />
+          Upcoming Events
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {recentEvents.length > 0 ? (
-            recentEvents.map((event: any, index: number) => {
+          {upcomingEvents.length > 0 ? (
+            upcomingEvents.map((event: any, index: number) => {
               const IconComponent = getEventIcon(event.eventType);
               const iconColorClass = getEventColor(event.eventType);
               
@@ -98,16 +102,16 @@ export default function RecentEvents() {
                 <Link key={event.id} href={`/event/${event.id}`}>
                   <div 
                     className="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer" 
-                    data-testid={`recent-event-${index}`}
+                    data-testid={`upcoming-event-${index}`}
                   >
                     <div className={`w-10 h-10 ${iconColorClass} rounded-lg flex items-center justify-center`}>
                       <IconComponent className="h-5 w-5" />
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900" data-testid={`text-recent-event-title-${index}`}>
+                      <h4 className="font-medium text-gray-900" data-testid={`text-upcoming-event-title-${index}`}>
                         {event.title}
                       </h4>
-                      <p className="text-sm text-gray-600" data-testid={`text-recent-event-info-${index}`}>
+                      <p className="text-sm text-gray-600" data-testid={`text-upcoming-event-info-${index}`}>
                         {event.maxParticipants} max participants • {formatDate(event.eventDate)}
                       </p>
                     </div>
@@ -117,8 +121,8 @@ export default function RecentEvents() {
               );
             })
           ) : (
-            <div className="text-center py-6" data-testid="text-no-recent-events">
-              <p className="text-gray-500 text-sm">No recent events</p>
+            <div className="text-center py-6" data-testid="text-no-upcoming-events">
+              <p className="text-gray-500 text-sm">No upcoming events</p>
             </div>
           )}
         </div>

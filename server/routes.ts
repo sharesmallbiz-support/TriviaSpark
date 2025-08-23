@@ -466,6 +466,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get participants for an event
+  app.get("/api/events/:id/participants", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+      
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const eventId = req.params.id;
+      const event = await storage.getEvent(eventId);
+      
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      
+      // Check if user owns this event
+      if (event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const participants = await storage.getParticipantsByEvent(eventId);
+      res.json(participants);
+    } catch (error) {
+      console.error("Error fetching participants:", error);
+      res.status(500).json({ error: "Failed to fetch participants" });
+    }
+  });
+
   // Update event status
   app.patch("/api/events/:id/status", async (req, res) => {
     try {

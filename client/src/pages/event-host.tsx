@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Play, Pause, Users, Clock, Trophy, ArrowLeft } from "lucide-react";
+import { Play, Pause, Users, Clock, Trophy, ArrowLeft, Calendar, MapPin, Building, Mail, Phone, Globe, Settings, Info } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import QRCodeDisplay from "@/components/ui/qr-code";
@@ -15,12 +15,18 @@ export default function EventHost() {
   const eventId = params?.id;
   const { toast } = useToast();
 
-  const { data, isLoading } = useQuery<{
-    event: any;
-    questions: any[];
-    participants: any[];
-  }>({
+  const { data: event, isLoading } = useQuery<any>({
     queryKey: ["/api/events", eventId],
+    enabled: !!eventId,
+  });
+
+  const { data: questions } = useQuery<any[]>({
+    queryKey: ["/api/events", eventId, "questions"],
+    enabled: !!eventId,
+  });
+
+  const { data: participants } = useQuery<any[]>({
+    queryKey: ["/api/events", eventId, "participants"],
     enabled: !!eventId,
   });
 
@@ -59,7 +65,7 @@ export default function EventHost() {
     );
   }
 
-  if (!data?.event) {
+  if (!event) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card className="text-center p-8" data-testid="card-event-not-found">
@@ -82,7 +88,17 @@ export default function EventHost() {
     );
   }
 
-  const { event, questions, participants } = data;
+  const formatEventDate = (date: string | null, time: string | null) => {
+    if (!date) return "No date set";
+    const eventDate = new Date(date);
+    const dateStr = eventDate.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    return time ? `${dateStr} at ${time}` : dateStr;
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -223,25 +239,58 @@ export default function EventHost() {
             </CardContent>
           </Card>
 
-          {/* Event Stats */}
-          <Card className="trivia-card" data-testid="card-event-stats">
+          {/* Event Details */}
+          <Card className="trivia-card" data-testid="card-event-details">
             <CardHeader>
-              <CardTitle data-testid="text-stats-title">Event Statistics</CardTitle>
+              <CardTitle className="flex items-center" data-testid="text-details-title">
+                <Info className="mr-2 h-5 w-5" />
+                Event Details
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Max Participants</span>
-                  <span className="font-semibold" data-testid="text-max-participants">{event.maxParticipants}</span>
-                </div>
+                {event.eventDate && (
+                  <div className="flex items-center space-x-3">
+                    <Calendar className="h-4 w-4 text-gray-500" />
+                    <div>
+                      <span className="text-sm text-gray-600">Date & Time</span>
+                      <p className="font-medium" data-testid="text-event-datetime">
+                        {formatEventDate(event.eventDate, event.eventTime)}
+                      </p>
+                    </div>
+                  </div>
+                )}
+                {event.location && (
+                  <div className="flex items-center space-x-3">
+                    <MapPin className="h-4 w-4 text-gray-500" />
+                    <div>
+                      <span className="text-sm text-gray-600">Location</span>
+                      <p className="font-medium" data-testid="text-event-location">{event.location}</p>
+                    </div>
+                  </div>
+                )}
+                {event.sponsoringOrganization && (
+                  <div className="flex items-center space-x-3">
+                    <Building className="h-4 w-4 text-gray-500" />
+                    <div>
+                      <span className="text-sm text-gray-600">Organization</span>
+                      <p className="font-medium" data-testid="text-event-organization">{event.sponsoringOrganization}</p>
+                    </div>
+                  </div>
+                )}
                 <Separator />
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Difficulty</span>
-                  <Badge variant="outline" data-testid="badge-difficulty">{event.difficulty}</Badge>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <span className="text-gray-600 text-sm">Max Participants</span>
+                    <p className="font-semibold" data-testid="text-max-participants">{event.maxParticipants}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-600 text-sm">Difficulty</span>
+                    <Badge variant="outline" data-testid="badge-difficulty">{event.difficulty}</Badge>
+                  </div>
                 </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Event Type</span>
+                <div>
+                  <span className="text-gray-600 text-sm">Event Type</span>
                   <Badge variant="secondary" data-testid="badge-event-type">
                     {event.eventType.replace('_', ' ')}
                   </Badge>
@@ -249,6 +298,77 @@ export default function EventHost() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Contact Information */}
+          {(event.contactEmail || event.contactPhone || event.websiteUrl) && (
+            <Card className="trivia-card" data-testid="card-contact-info">
+              <CardHeader>
+                <CardTitle data-testid="text-contact-title">Contact Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {event.contactEmail && (
+                    <div className="flex items-center space-x-3">
+                      <Mail className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm" data-testid="text-contact-email">{event.contactEmail}</span>
+                    </div>
+                  )}
+                  {event.contactPhone && (
+                    <div className="flex items-center space-x-3">
+                      <Phone className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm" data-testid="text-contact-phone">{event.contactPhone}</span>
+                    </div>
+                  )}
+                  {event.websiteUrl && (
+                    <div className="flex items-center space-x-3">
+                      <Globe className="h-4 w-4 text-gray-500" />
+                      <a href={event.websiteUrl} target="_blank" rel="noopener noreferrer" 
+                         className="text-sm text-blue-600 hover:underline" data-testid="link-website">
+                        {event.websiteUrl}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Event Information */}
+          {(event.eventRules || event.prizeInformation || event.specialInstructions) && (
+            <Card className="trivia-card" data-testid="card-event-info">
+              <CardHeader>
+                <CardTitle data-testid="text-event-info-title">Event Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {event.eventRules && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Rules</h4>
+                      <p className="text-sm text-gray-600 whitespace-pre-line" data-testid="text-event-rules">
+                        {event.eventRules}
+                      </p>
+                    </div>
+                  )}
+                  {event.prizeInformation && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Prizes</h4>
+                      <p className="text-sm text-gray-600 whitespace-pre-line" data-testid="text-prize-info">
+                        {event.prizeInformation}
+                      </p>
+                    </div>
+                  )}
+                  {event.specialInstructions && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">Special Instructions</h4>
+                      <p className="text-sm text-gray-600 whitespace-pre-line" data-testid="text-special-instructions">
+                        {event.specialInstructions}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Participants */}
           <Card className="trivia-card" data-testid="card-participants">

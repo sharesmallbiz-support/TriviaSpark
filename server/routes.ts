@@ -177,10 +177,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Event not found" });
       }
       
-      const questions = await openAIService.generateQuestions(validatedRequest);
+      // Get existing questions to avoid duplicates
+      const existingQuestions = await storage.getQuestionsByEvent(validatedRequest.eventId);
+      
+      const questions = await openAIService.generateQuestions(validatedRequest, existingQuestions);
       
       // Store generated questions in the event
-      const existingQuestions = await storage.getQuestionsByEvent(validatedRequest.eventId);
       const questionsWithEventId = questions.map((q, index) => ({
         ...q,
         eventId: validatedRequest.eventId,

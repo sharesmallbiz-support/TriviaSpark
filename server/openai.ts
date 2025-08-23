@@ -118,21 +118,27 @@ Respond with JSON in this format:
     }
   }
 
-  async generateQuestions(request: QuestionGenerationRequest): Promise<Omit<InsertQuestion, 'eventId'>[]> {
+  async generateQuestions(request: QuestionGenerationRequest, existingQuestions: any[] = []): Promise<Omit<InsertQuestion, 'eventId'>[]> {
+    const existingQuestionsText = existingQuestions.length > 0 
+      ? `\n\nEXISTING QUESTIONS TO AVOID DUPLICATING:\n${existingQuestions.map((q, i) => `${i + 1}. ${q.question}`).join('\n')}\n\nIMPORTANT: Do NOT generate questions that are similar to or duplicate any of the existing questions listed above. Create completely new and unique questions on the same topic but with different angles, aspects, or details.`
+      : '';
+
     const prompt = `Generate ${request.count} trivia question(s) with the following specifications:
 
 Topic: ${request.topic}
 Type: ${request.type.replace('_', ' ')}
 Difficulty: ${request.difficulty || 'medium'}
-Category: ${request.category || 'General'}
+Category: ${request.category || 'General'}${existingQuestionsText}
 
 Requirements:
 - Questions should be accurate and well-researched
+- Questions must be completely unique and different from any existing questions
 - For multiple choice, provide 4 options with only one correct answer
 - For true/false, ensure the statement is clear and unambiguous
 - For fill in the blank, use [BLANK] to indicate where the answer goes
 - Include appropriate point values (easy: 50-75, medium: 75-125, hard: 125-200)
 - Set appropriate time limits (easy: 20s, medium: 30s, hard: 45s)
+- Focus on different aspects, details, or angles of the topic to ensure uniqueness
 
 Respond with JSON in this format:
 {

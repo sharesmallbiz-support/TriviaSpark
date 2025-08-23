@@ -280,32 +280,52 @@ export class MemStorage implements IStorage {
     // Create sample teams for the seeded event
     const teams: Team[] = [
       {
-        id: "team-1-wine-lovers",
+        id: "team-sara-team",
         eventId: seedEventId,
-        name: "Wine Lovers",
+        name: "SaraTeam",
         tableNumber: 1,
         maxMembers: 6,
         createdAt: new Date(),
       },
       {
-        id: "team-2-rotary-rocks",
+        id: "team-john-team",
         eventId: seedEventId,
-        name: "Rotary Rocks",
+        name: "JohnTeam",
         tableNumber: 2,
-        maxMembers: 6,
-        createdAt: new Date(),
-      },
-      {
-        id: "team-3-trivia-masters",
-        eventId: seedEventId,
-        name: "Trivia Masters",
-        tableNumber: 3,
         maxMembers: 6,
         createdAt: new Date(),
       },
     ];
     
     teams.forEach(team => this.teams.set(team.id, team));
+    
+    // Create sample participants for the seeded event
+    const participants: Participant[] = [
+      {
+        id: "participant-sara",
+        eventId: seedEventId,
+        name: "Sara",
+        teamId: "team-sara-team",
+        participantToken: "sara-token-" + randomUUID(),
+        joinedAt: new Date(),
+        lastActiveAt: new Date(),
+        isActive: true,
+        canSwitchTeam: true,
+      },
+      {
+        id: "participant-john",
+        eventId: seedEventId,
+        name: "John",
+        teamId: "team-john-team",
+        participantToken: "john-token-" + randomUUID(),
+        joinedAt: new Date(),
+        lastActiveAt: new Date(),
+        isActive: true,
+        canSwitchTeam: true,
+      },
+    ];
+    
+    participants.forEach(participant => this.participants.set(participant.id, participant));
   }
 
   async getUser(id: string): Promise<User | undefined> {

@@ -409,16 +409,22 @@ function EventManage() {
     setParticipants(prev => {
       const newParticipants = prev.map(p => {
         if (p.id === teamId && p.selectedAnswer && !p.answerLocked && !answersLocked) {
-          // Don't add points here - wait for server response with correct scoring
+          // Simple scoring: if correct answer within 30 seconds, score = remaining time
+          const currentQuestion = questions[currentQuestionIndex];
+          const isCorrect = currentQuestion && 
+            p.selectedAnswer.toLowerCase().trim() === currentQuestion.correctAnswer.toLowerCase().trim();
+          const points = isCorrect && timeLeft > 0 ? timeLeft : 0;
+          
           return {
             ...p,
-            answerLocked: true
+            answerLocked: true,
+            score: p.score + points
           };
         }
         return p;
       });
       
-      // Broadcast locked answer
+      // Broadcast locked answer (optional, for real multiplayer later)
       const lockedParticipant = newParticipants.find(p => p.id === teamId);
       if (lockedParticipant && eventId && questions[currentQuestionIndex]) {
         sendMessage({
@@ -674,12 +680,14 @@ function EventManage() {
     }
   }, [participants, dryRunActive, showAnswer, answersLocked, eventId, questions, currentQuestionIndex, sendMessage]);
 
-  // Handle WebSocket messages to update participant scores
+  // Handle WebSocket messages (for future multiplayer features)
   useEffect(() => {
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
       
-      if (lastMessage.type === 'answer_locked' && lastMessage.data) {
+      // For dry run mode, scoring is handled locally
+      // WebSocket messages can be used for real multiplayer events later
+      if (lastMessage.type === 'answer_locked' && lastMessage.data && !dryRunActive) {
         const { participantId, score, isCorrect } = lastMessage.data;
         
         setParticipants(prev => prev.map(p => {
@@ -693,7 +701,7 @@ function EventManage() {
         }));
       }
     }
-  }, [messages]);
+  }, [messages, dryRunActive]);
 
   // Reset final countdown when it reaches 0
   useEffect(() => {

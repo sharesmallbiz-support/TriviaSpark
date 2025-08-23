@@ -168,8 +168,22 @@ class TriviaSpark_WebSocket_Manager {
         if (question) {
           const isCorrect = message.data.selectedAnswer.toLowerCase().trim() === (question.correctAnswer || '').toLowerCase().trim();
           const timeRemaining = message.data?.timeRemaining || 0;
-          // Points = seconds remaining if correct, 0 if wrong or no time remaining
-          const points = isCorrect && timeRemaining > 0 ? timeRemaining : 0;
+          
+          // Tiered scoring system based on time remaining
+          let points = 0;
+          if (isCorrect && timeRemaining > 0) {
+            if (timeRemaining >= 20) {
+              points = 20;
+            } else if (timeRemaining >= 15) {
+              points = 15;
+            } else if (timeRemaining >= 10) {
+              points = 10;
+            } else if (timeRemaining >= 5) {
+              points = 5;
+            } else {
+              points = 1; // 1-4 seconds remaining
+            }
+          }
           
           await this.storage.createResponse({
             participantId: client.participantId,

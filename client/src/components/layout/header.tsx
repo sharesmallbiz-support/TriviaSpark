@@ -37,11 +37,13 @@ export default function Header() {
               <Bell className="h-5 w-5" />
             </Button>
             
-            <Avatar className="w-8 h-8" data-testid="avatar-user">
-              <AvatarFallback className="wine-gradient text-white text-sm font-medium">
-                MH
-              </AvatarFallback>
-            </Avatar>
+            <Link href="/profile">
+              <Avatar className="w-8 h-8 cursor-pointer hover:ring-2 hover:ring-wine-300 transition-all" data-testid="avatar-user">
+                <AvatarFallback className="wine-gradient text-white text-sm font-medium">
+                  MH
+                </AvatarFallback>
+              </Avatar>
+            </Link>
           </div>
         </div>
       </div>

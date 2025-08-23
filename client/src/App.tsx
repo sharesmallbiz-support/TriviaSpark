@@ -12,6 +12,7 @@ import EventManage from "@/pages/event-manage";
 import Dashboard from "@/pages/dashboard";
 import EventHost from "@/pages/event-host";
 import EventJoin from "@/pages/event-join";
+import Profile from "@/pages/profile";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
@@ -35,6 +36,7 @@ function Router() {
             <Footer />
           </Route>
           <Route path="/join/:qrCode" component={EventJoin} />
+          <Route path="/profile" component={Profile} />
           <Route component={NotFound} />
         </Switch>
       </main>

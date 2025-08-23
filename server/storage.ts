@@ -146,8 +146,8 @@ export class MemStorage implements IStorage {
       
       // Business information
       registrationDeadline: new Date("2025-02-10T23:59:59"),
-      cancellationPolicy: "Full refund available until 72 hours before the event. After that, 50% refund available until 24 hours before. No refunds within 24 hours of the event.",
-      refundPolicy: "Refunds processed within 5-7 business days to original payment method. Processing fees may apply.",
+      cancellationPolicy: "Full refund available until 72 hours before the event. After that, 50% refund is available until 24 hours before. No refunds within 24 hours of the event.",
+      refundPolicy: "Refunds processed within 5-7 business days to the original payment method. Processing fees may apply.",
       sponsorInformation: JSON.stringify({
         name: "Pacific Northwest Wine Distributors",
         logoUrl: "https://example.com/sponsor-logo.png",
@@ -156,11 +156,11 @@ export class MemStorage implements IStorage {
       }),
       
       settings: {},
-      eventDate: new Date("2025-02-15"),
+      eventDate: new Date("2025-09-13"),
       eventTime: "6:30 PM",
       location: "Riverside Conference Center",
       sponsoringOrganization: "West Wichita Rotary Club",
-      createdAt: new Date(),
+      createdAt: new Date("2025-08-23"),
       startedAt: null,
       completedAt: null,
     };

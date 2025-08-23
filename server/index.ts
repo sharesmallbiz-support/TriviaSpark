@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { TriviaSpark_WebSocket_Manager } from "./websocket";
 
 const app = express();
 app.use(express.json());
@@ -40,6 +41,12 @@ app.use((req, res, next) => {
 
 (async () => {
   const server = await registerRoutes(app);
+  
+  // Initialize WebSocket manager
+  const wsManager = new TriviaSpark_WebSocket_Manager(server);
+  
+  // Make WebSocket manager available globally for route handlers
+  app.set('wsManager', wsManager);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -69,5 +76,6 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    log(`websocket ready for connections on ws://localhost:${port}/ws`);
   });
 })();

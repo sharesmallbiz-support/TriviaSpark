@@ -90,7 +90,13 @@ function EventManage() {
   const [answersLocked, setAnswersLocked] = useState(false);
   const [timerActive, setTimerActive] = useState(false);
   const [viewMode, setViewMode] = useState<'both' | 'presenter' | 'participant'>('both');
-  const [participants, setParticipants] = useState([
+  const [participants, setParticipants] = useState<Array<{
+    id: string;
+    name: string;
+    selectedAnswer: string | null;
+    answerLocked: boolean;
+    score: number;
+  }>>([
     { id: 'team1', name: 'Team 1', selectedAnswer: null, answerLocked: false, score: 0 },
     { id: 'team2', name: 'Team 2', selectedAnswer: null, answerLocked: false, score: 0 }
   ]);

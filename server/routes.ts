@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { openAIService } from "./openai";
-import { eventGenerationSchema, questionGenerationSchema, insertEventSchema, insertParticipantSchema } from "@shared/schema";
+import { eventGenerationSchema, questionGenerationSchema, insertEventSchema, insertParticipantSchema, insertTeamSchema } from "@shared/schema";
 import { z } from "zod";
 
 // Simple session store
@@ -225,29 +225,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Join event via QR code
   app.post("/api/events/join/:qrCode", async (req, res) => {
     try {
-      const { name, teamName } = req.body;
+      const { name, teamAction, teamIdentifier } = req.body;
       
       if (!name) {
         return res.status(400).json({ error: "Name is required" });
       }
       
+      // Check for existing participant via cookie
+      const participantToken = req.cookies.participantToken;
+      if (participantToken) {
+        const existingParticipant = await storage.getParticipantByToken(participantToken);
+        if (existingParticipant) {
+          return res.json({
+            participant: existingParticipant,
+            event: await storage.getEvent(existingParticipant.eventId),
+            returning: true
+          });
+        }
+      }
+      
       // Find event by QR code
-      const events = await storage.getEventsByHost("demo-user-id");
+      const events = await storage.getEventsByHost("mark-user-id");
       const event = events.find(e => e.qrCode === req.params.qrCode);
       
       if (!event) {
         return res.status(404).json({ error: "Event not found" });
       }
       
-      if (event.status !== "active") {
-        return res.status(400).json({ error: "Event is not currently active" });
+      if (event.status === "cancelled") {
+        return res.status(400).json({ error: "Event has been cancelled" });
+      }
+      
+      let teamId = null;
+      
+      // Handle team selection
+      if (teamAction === "join" && teamIdentifier) {
+        const team = await storage.getTeamByNameOrTable(event.id, teamIdentifier);
+        if (!team) {
+          return res.status(404).json({ error: "Team not found" });
+        }
+        
+        // Check team capacity
+        const teamMembers = await storage.getParticipantsByTeam(team.id);
+        if (teamMembers.length >= (team.maxMembers || 6)) {
+          return res.status(400).json({ error: "Team is full" });
+        }
+        
+        teamId = team.id;
+      } else if (teamAction === "create" && teamIdentifier) {
+        // Create new team
+        const existingTeam = await storage.getTeamByNameOrTable(event.id, teamIdentifier);
+        if (existingTeam) {
+          return res.status(400).json({ error: "Team name or table number already exists" });
+        }
+        
+        const isTableNumber = !isNaN(Number(teamIdentifier));
+        const newTeam = await storage.createTeam({
+          eventId: event.id,
+          name: isTableNumber ? `Table ${teamIdentifier}` : String(teamIdentifier),
+          tableNumber: isTableNumber ? Number(teamIdentifier) : null,
+        });
+        
+        teamId = newTeam.id;
       }
       
       const participant = await storage.createParticipant({
         eventId: event.id,
         name,
-        teamName: teamName || null,
-        isActive: true
+        teamId,
+        isActive: true,
+        canSwitchTeam: event.status !== "active"
+      });
+      
+      // Set participant cookie
+      res.cookie('participantToken', participant.participantToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        sameSite: 'strict'
       });
       
       res.status(201).json({
@@ -255,8 +310,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         event: {
           id: event.id,
           title: event.title,
-          description: event.description
-        }
+          description: event.description,
+          status: event.status
+        },
+        returning: false
       });
     } catch (error) {
       console.error("Error joining event:", error);
@@ -430,6 +487,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get teams for an event
+  app.get("/api/events/:id/teams", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+      
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const eventId = req.params.id;
+      const event = await storage.getEvent(eventId);
+      
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      
+      // Check if user owns this event
+      if (event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const teams = await storage.getTeamsByEvent(eventId);
+      
+      // Include participant count for each team
+      const teamsWithCounts = await Promise.all(teams.map(async (team) => {
+        const participants = await storage.getParticipantsByTeam(team.id);
+        return {
+          ...team,
+          participantCount: participants.length,
+          participants: participants
+        };
+      }));
+      
+      res.json(teamsWithCounts);
+    } catch (error) {
+      console.error("Error fetching teams:", error);
+      res.status(500).json({ error: "Failed to fetch teams" });
+    }
+  });
+  
+  // Create team
+  app.post("/api/events/:id/teams", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+      
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const eventId = req.params.id;
+      const { name, tableNumber } = req.body;
+      
+      if (!name) {
+        return res.status(400).json({ error: "Team name is required" });
+      }
+      
+      const event = await storage.getEvent(eventId);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      
+      if (event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      // Check for duplicate name or table number
+      const existingTeam = await storage.getTeamByNameOrTable(eventId, tableNumber || name);
+      if (existingTeam) {
+        return res.status(400).json({ error: "Team name or table number already exists" });
+      }
+      
+      const team = await storage.createTeam({
+        eventId,
+        name,
+        tableNumber: tableNumber || null
+      });
+      
+      res.status(201).json(team);
+    } catch (error) {
+      console.error("Error creating team:", error);
+      res.status(500).json({ error: "Failed to create team" });
+    }
+  });
+  
+  // Switch participant team
+  app.put("/api/participants/:id/team", async (req, res) => {
+    try {
+      const participantId = req.params.id;
+      const { teamId } = req.body;
+      
+      // Check participant token
+      const participantToken = req.cookies.participantToken;
+      if (!participantToken) {
+        return res.status(401).json({ error: "Not authenticated as participant" });
+      }
+      
+      const participant = await storage.getParticipantByToken(participantToken);
+      if (!participant || participant.id !== participantId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      if (!participant.canSwitchTeam) {
+        return res.status(400).json({ error: "Team switching is locked" });
+      }
+      
+      const updatedParticipant = await storage.switchParticipantTeam(participantId, teamId);
+      if (!updatedParticipant) {
+        return res.status(400).json({ error: "Unable to switch teams" });
+      }
+      
+      res.json(updatedParticipant);
+    } catch (error) {
+      console.error("Error switching team:", error);
+      res.status(500).json({ error: "Failed to switch team" });
+    }
+  });
+  
   // Start event
   app.post("/api/events/:id/start", async (req, res) => {
     try {
@@ -441,7 +617,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const eventId = req.params.id;
+      const event = await storage.getEvent(eventId);
+      
+      if (!event || event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
       const updatedEvent = await storage.updateEventStatus(eventId, "active");
+      
+      // Lock team switching once event starts
+      await storage.lockTeamSwitching(eventId);
+      
       res.json(updatedEvent);
     } catch (error) {
       console.error("Error starting event:", error);
@@ -631,6 +817,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating question:", error);
       res.status(500).json({ error: "Failed to update question" });
+    }
+  });
+
+  // Get teams publicly (for participant joining)
+  app.get("/api/events/:qrCode/teams-public", async (req, res) => {
+    try {
+      const qrCode = req.params.qrCode;
+      
+      // Find event by QR code
+      const events = await storage.getEventsByHost("mark-user-id");
+      const event = events.find(e => e.qrCode === qrCode);
+      
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      
+      const teams = await storage.getTeamsByEvent(event.id);
+      
+      // Include participant count for each team
+      const teamsWithCounts = await Promise.all(teams.map(async (team) => {
+        const participants = await storage.getParticipantsByTeam(team.id);
+        return {
+          ...team,
+          participantCount: participants.length,
+        };
+      }));
+      
+      res.json(teamsWithCounts);
+    } catch (error) {
+      console.error("Error fetching public teams:", error);
+      res.status(500).json({ error: "Failed to fetch teams" });
     }
   });
 

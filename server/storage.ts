@@ -5,6 +5,8 @@ import {
   type InsertEvent,
   type Question, 
   type InsertQuestion,
+  type Team,
+  type InsertTeam,
   type Participant, 
   type InsertParticipant,
   type Response,
@@ -33,9 +35,23 @@ export interface IStorage {
   createQuestion(question: InsertQuestion): Promise<Question>;
   createQuestions(questions: InsertQuestion[]): Promise<Question[]>;
   
+  // Team methods
+  getTeamsByEvent(eventId: string): Promise<Team[]>;
+  getTeam(id: string): Promise<Team | undefined>;
+  getTeamByNameOrTable(eventId: string, nameOrTable: string | number): Promise<Team | undefined>;
+  createTeam(team: InsertTeam): Promise<Team>;
+  updateTeam(id: string, updates: Partial<Team>): Promise<Team | undefined>;
+  deleteTeam(id: string): Promise<boolean>;
+  
   // Participant methods
+  getParticipant(id: string): Promise<Participant | undefined>;
+  getParticipantByToken(token: string): Promise<Participant | undefined>;
   getParticipantsByEvent(eventId: string): Promise<Participant[]>;
+  getParticipantsByTeam(teamId: string): Promise<Participant[]>;
   createParticipant(participant: InsertParticipant): Promise<Participant>;
+  updateParticipant(id: string, updates: Partial<Participant>): Promise<Participant | undefined>;
+  switchParticipantTeam(participantId: string, newTeamId: string | null): Promise<Participant | undefined>;
+  lockTeamSwitching(eventId: string): Promise<void>;
   
   // Response methods
   getResponsesByParticipant(participantId: string): Promise<Response[]>;
@@ -61,6 +77,7 @@ export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private events: Map<string, Event>;
   private questions: Map<string, Question>;
+  private teams: Map<string, Team>;
   private participants: Map<string, Participant>;
   private responses: Map<string, Response>;
   private funFacts: Map<string, FunFact>;
@@ -69,6 +86,7 @@ export class MemStorage implements IStorage {
     this.users = new Map();
     this.events = new Map();
     this.questions = new Map();
+    this.teams = new Map();
     this.participants = new Map();
     this.responses = new Map();
     this.funFacts = new Map();
@@ -258,6 +276,36 @@ export class MemStorage implements IStorage {
     ];
     
     funFacts.forEach(ff => this.funFacts.set(ff.id, ff));
+    
+    // Create sample teams for the seeded event
+    const teams: Team[] = [
+      {
+        id: "team-1-wine-lovers",
+        eventId: seedEventId,
+        name: "Wine Lovers",
+        tableNumber: 1,
+        maxMembers: 6,
+        createdAt: new Date(),
+      },
+      {
+        id: "team-2-rotary-rocks",
+        eventId: seedEventId,
+        name: "Rotary Rocks",
+        tableNumber: 2,
+        maxMembers: 6,
+        createdAt: new Date(),
+      },
+      {
+        id: "team-3-trivia-masters",
+        eventId: seedEventId,
+        name: "Trivia Masters",
+        tableNumber: 3,
+        maxMembers: 6,
+        createdAt: new Date(),
+      },
+    ];
+    
+    teams.forEach(team => this.teams.set(team.id, team));
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -443,17 +491,120 @@ export class MemStorage implements IStorage {
       .filter(participant => participant.eventId === eventId);
   }
 
+  // Team methods
+  async getTeamsByEvent(eventId: string): Promise<Team[]> {
+    return Array.from(this.teams.values())
+      .filter(team => team.eventId === eventId)
+      .sort((a, b) => (a.tableNumber || 0) - (b.tableNumber || 0));
+  }
+
+  async getTeam(id: string): Promise<Team | undefined> {
+    return this.teams.get(id);
+  }
+
+  async getTeamByNameOrTable(eventId: string, nameOrTable: string | number): Promise<Team | undefined> {
+    const teams = await this.getTeamsByEvent(eventId);
+    return teams.find(team => 
+      team.name.toLowerCase() === String(nameOrTable).toLowerCase() || 
+      team.tableNumber === Number(nameOrTable)
+    );
+  }
+
+  async createTeam(insertTeam: InsertTeam): Promise<Team> {
+    const id = randomUUID();
+    const team: Team = {
+      ...insertTeam,
+      id,
+      createdAt: new Date(),
+      tableNumber: insertTeam.tableNumber || null,
+      maxMembers: insertTeam.maxMembers || 6,
+    };
+    this.teams.set(id, team);
+    return team;
+  }
+
+  async updateTeam(id: string, updates: Partial<Team>): Promise<Team | undefined> {
+    const team = this.teams.get(id);
+    if (!team) return undefined;
+    
+    const updatedTeam = { ...team, ...updates };
+    this.teams.set(id, updatedTeam);
+    return updatedTeam;
+  }
+
+  async deleteTeam(id: string): Promise<boolean> {
+    // Don't delete if there are participants
+    const participants = await this.getParticipantsByTeam(id);
+    if (participants.length > 0) return false;
+    
+    return this.teams.delete(id);
+  }
+
+  // Participant methods
+  async getParticipant(id: string): Promise<Participant | undefined> {
+    return this.participants.get(id);
+  }
+
+  async getParticipantByToken(token: string): Promise<Participant | undefined> {
+    return Array.from(this.participants.values()).find(p => p.participantToken === token);
+  }
+
+  async getParticipantsByTeam(teamId: string): Promise<Participant[]> {
+    return Array.from(this.participants.values())
+      .filter(participant => participant.teamId === teamId);
+  }
+
   async createParticipant(insertParticipant: InsertParticipant): Promise<Participant> {
     const id = randomUUID();
+    const participantToken = randomUUID();
     const participant: Participant = {
       ...insertParticipant,
       id,
+      participantToken,
       joinedAt: new Date(),
-      teamName: insertParticipant.teamName || null,
-      isActive: insertParticipant.isActive || null,
+      lastActiveAt: new Date(),
+      teamId: insertParticipant.teamId || null,
+      isActive: insertParticipant.isActive ?? true,
+      canSwitchTeam: insertParticipant.canSwitchTeam ?? true,
     };
     this.participants.set(id, participant);
     return participant;
+  }
+
+  async updateParticipant(id: string, updates: Partial<Participant>): Promise<Participant | undefined> {
+    const participant = this.participants.get(id);
+    if (!participant) return undefined;
+    
+    const updatedParticipant = { 
+      ...participant, 
+      ...updates,
+      lastActiveAt: new Date() 
+    };
+    this.participants.set(id, updatedParticipant);
+    return updatedParticipant;
+  }
+
+  async switchParticipantTeam(participantId: string, newTeamId: string | null): Promise<Participant | undefined> {
+    const participant = this.participants.get(participantId);
+    if (!participant || !participant.canSwitchTeam) return undefined;
+    
+    // Check team capacity if joining a team
+    if (newTeamId) {
+      const team = await this.getTeam(newTeamId);
+      if (!team) return undefined;
+      
+      const teamMembers = await this.getParticipantsByTeam(newTeamId);
+      if (teamMembers.length >= (team.maxMembers || 6)) return undefined;
+    }
+    
+    return this.updateParticipant(participantId, { teamId: newTeamId });
+  }
+
+  async lockTeamSwitching(eventId: string): Promise<void> {
+    const participants = await this.getParticipantsByEvent(eventId);
+    for (const participant of participants) {
+      await this.updateParticipant(participant.id, { canSwitchTeam: false });
+    }
   }
 
   async getResponsesByParticipant(participantId: string): Promise<Response[]> {

@@ -99,18 +99,62 @@ export class MemStorage implements IStorage {
     };
     this.users.set(markUser.id, markUser);
     
-    // Create seeded event for Mark
+    // Create seeded event for Mark with rich metadata
     const seedEventId = "seed-event-coast-to-cascades";
     const seedEvent: Event = {
       id: seedEventId,
       title: "Coast to Cascades Wine & Trivia Evening",
       description: "An elegant evening combining Pacific Northwest wines with engaging trivia, supporting West Wichita Rotary Club's community initiatives.",
       hostId: "mark-user-id",
-      eventType: "wine-dinner",
+      eventType: "wine_dinner",
       status: "draft",
       qrCode: "rotary-cascades-2025",
       maxParticipants: 50,
-      difficulty: "medium",
+      difficulty: "mixed",
+      
+      // Rich content and branding
+      logoUrl: "https://example.com/rotary-logo.png",
+      backgroundImageUrl: "https://example.com/wine-background.jpg",
+      eventCopy: "Experience an unforgettable evening where fine wine meets friendly competition! Join us for Coast to Cascades Wine & Trivia Night, where every sip and every answer helps support our local community. With carefully curated Pacific Northwest wines and engaging trivia questions, this elegant fundraiser promises both sophistication and fun.",
+      welcomeMessage: "Welcome to Coast to Cascades Wine & Trivia Night! We're thrilled to have you join us for this special evening of wine, wisdom, and wonderful causes. Get ready for an exciting trivia experience while supporting our community!",
+      thankYouMessage: "Thank you for participating in Coast to Cascades Wine & Trivia Night! Your involvement helps us continue supporting local charities and making a difference in our community. We hope you enjoyed the evening!",
+      
+      // Theme and styling
+      primaryColor: "#7C2D12", // wine color
+      secondaryColor: "#FEF3C7", // champagne color
+      fontFamily: "Inter",
+      
+      // Contact and social
+      contactEmail: "events@westwichitarotary.org",
+      contactPhone: "(316) 555-0123",
+      websiteUrl: "https://westwichitarotary.org",
+      socialLinks: JSON.stringify({
+        facebook: "https://facebook.com/westwichitarotary",
+        twitter: "https://twitter.com/wwrotary",
+        instagram: "https://instagram.com/westwichitarotary"
+      }),
+      
+      // Event details
+      prizeInformation: "1st Place: $500 Wine Country Gift Package\n2nd Place: $300 Local Restaurant Gift Cards\n3rd Place: $200 Wine Selection\nAll participants receive a commemorative wine glass and local business discount cards!",
+      eventRules: "• Teams of 2-6 participants\n• No smartphones or electronic devices during questions\n• Wine tasting between rounds is encouraged\n• Be respectful to all participants and volunteers\n• Have fun and support a great cause!",
+      specialInstructions: "Please arrive 30 minutes early for check-in and wine selection. Designated driver arrangements are encouraged. Business casual or cocktail attire suggested.",
+      accessibilityInfo: "The venue is wheelchair accessible with elevator access to all floors. Large print question sheets available upon request. Please contact us for any specific accommodation needs.",
+      dietaryAccommodations: "Light appetizers will be served. Vegetarian and gluten-free options available. Please contact us 48 hours in advance for specific dietary requirements.",
+      dressCode: "Business casual or cocktail attire",
+      ageRestrictions: "21+ for wine tasting, 18+ for trivia participation",
+      technicalRequirements: "No technical requirements - all materials provided",
+      
+      // Business information
+      registrationDeadline: new Date("2025-02-10T23:59:59"),
+      cancellationPolicy: "Full refund available until 72 hours before the event. After that, 50% refund available until 24 hours before. No refunds within 24 hours of the event.",
+      refundPolicy: "Refunds processed within 5-7 business days to original payment method. Processing fees may apply.",
+      sponsorInformation: JSON.stringify({
+        name: "Pacific Northwest Wine Distributors",
+        logoUrl: "https://example.com/sponsor-logo.png",
+        website: "https://pnwwine.com",
+        description: "Leading distributor of premium Pacific Northwest wines, proudly supporting community fundraising events throughout the region."
+      }),
+      
       settings: {},
       eventDate: new Date("2025-02-15"),
       eventTime: "6:30 PM",
@@ -258,21 +302,57 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const qrCode = `trivia-${id.substring(0, 8)}`;
     const event: Event = {
-      ...insertEvent,
       id,
+      title: insertEvent.title,
       qrCode,
       createdAt: new Date(),
       startedAt: null,
       completedAt: null,
+      hostId: insertEvent.hostId,
+      eventType: insertEvent.eventType,
       description: insertEvent.description || null,
-      status: insertEvent.status || null,
-      maxParticipants: insertEvent.maxParticipants || null,
-      difficulty: insertEvent.difficulty || null,
+      status: insertEvent.status || "draft",
+      maxParticipants: insertEvent.maxParticipants || 50,
+      difficulty: insertEvent.difficulty || "mixed",
       settings: insertEvent.settings || {},
       eventDate: insertEvent.eventDate || null,
       eventTime: insertEvent.eventTime || null,
       location: insertEvent.location || null,
       sponsoringOrganization: insertEvent.sponsoringOrganization || null,
+      
+      // Rich content and branding - provide defaults for nullables
+      logoUrl: insertEvent.logoUrl || null,
+      backgroundImageUrl: insertEvent.backgroundImageUrl || null,
+      eventCopy: insertEvent.eventCopy || null,
+      welcomeMessage: insertEvent.welcomeMessage || null,
+      thankYouMessage: insertEvent.thankYouMessage || null,
+      
+      // Theme and styling - provide defaults
+      primaryColor: insertEvent.primaryColor || "#7C2D12",
+      secondaryColor: insertEvent.secondaryColor || "#FEF3C7",
+      fontFamily: insertEvent.fontFamily || "Inter",
+      
+      // Contact and social
+      contactEmail: insertEvent.contactEmail || null,
+      contactPhone: insertEvent.contactPhone || null,
+      websiteUrl: insertEvent.websiteUrl || null,
+      socialLinks: insertEvent.socialLinks || null,
+      
+      // Event details
+      prizeInformation: insertEvent.prizeInformation || null,
+      eventRules: insertEvent.eventRules || null,
+      specialInstructions: insertEvent.specialInstructions || null,
+      accessibilityInfo: insertEvent.accessibilityInfo || null,
+      dietaryAccommodations: insertEvent.dietaryAccommodations || null,
+      dressCode: insertEvent.dressCode || null,
+      ageRestrictions: insertEvent.ageRestrictions || null,
+      technicalRequirements: insertEvent.technicalRequirements || null,
+      
+      // Business information
+      registrationDeadline: insertEvent.registrationDeadline || null,
+      cancellationPolicy: insertEvent.cancellationPolicy || null,
+      refundPolicy: insertEvent.refundPolicy || null,
+      sponsorInformation: insertEvent.sponsorInformation || null,
     };
     this.events.set(id, event);
     return event;

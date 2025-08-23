@@ -33,7 +33,10 @@ import {
   Plus,
   Edit,
   Trash2,
-  Sparkles
+  Sparkles,
+  Palette,
+  Mail,
+  FileText
 } from "lucide-react";
 
 type Event = {
@@ -49,6 +52,41 @@ type Event = {
   eventTime: string | null;
   location: string | null;
   sponsoringOrganization: string | null;
+  
+  // Rich content and branding
+  logoUrl?: string | null;
+  backgroundImageUrl?: string | null;
+  eventCopy?: string | null;
+  welcomeMessage?: string | null;
+  thankYouMessage?: string | null;
+  
+  // Theme and styling
+  primaryColor?: string | null;
+  secondaryColor?: string | null;
+  fontFamily?: string | null;
+  
+  // Contact and social
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  websiteUrl?: string | null;
+  socialLinks?: string | null;
+  
+  // Event details
+  prizeInformation?: string | null;
+  eventRules?: string | null;
+  specialInstructions?: string | null;
+  accessibilityInfo?: string | null;
+  dietaryAccommodations?: string | null;
+  dressCode?: string | null;
+  ageRestrictions?: string | null;
+  technicalRequirements?: string | null;
+  
+  // Business information
+  registrationDeadline?: string | null;
+  cancellationPolicy?: string | null;
+  refundPolicy?: string | null;
+  sponsorInformation?: string | null;
+  
   createdAt: string;
 };
 
@@ -77,6 +115,40 @@ type EventFormData = {
   eventTime: string;
   location: string;
   sponsoringOrganization: string;
+  
+  // Rich content and branding
+  logoUrl?: string;
+  backgroundImageUrl?: string;
+  eventCopy?: string;
+  welcomeMessage?: string;
+  thankYouMessage?: string;
+  
+  // Theme and styling
+  primaryColor?: string;
+  secondaryColor?: string;
+  fontFamily?: string;
+  
+  // Contact and social
+  contactEmail?: string;
+  contactPhone?: string;
+  websiteUrl?: string;
+  socialLinks?: string;
+  
+  // Event details
+  prizeInformation?: string;
+  eventRules?: string;
+  specialInstructions?: string;
+  accessibilityInfo?: string;
+  dietaryAccommodations?: string;
+  dressCode?: string;
+  ageRestrictions?: string;
+  technicalRequirements?: string;
+  
+  // Business information
+  registrationDeadline?: string;
+  cancellationPolicy?: string;
+  refundPolicy?: string;
+  sponsorInformation?: string;
 };
 
 function EventManage() {

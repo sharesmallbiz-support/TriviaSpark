@@ -4,7 +4,15 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+// Custom progress component to avoid React hook issues
+const SimpleProgress = ({ value, className }: { value: number; className?: string }) => (
+  <div className={`w-full bg-gray-200 rounded-full h-2 ${className}`}>
+    <div 
+      className="bg-champagne-400 h-2 rounded-full transition-all duration-300"
+      style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+    />
+  </div>
+);
 import { Play, Pause, SkipForward, RotateCcw, Trophy, Users, Clock, ChevronRight, Star } from "lucide-react";
 
 export default function PresenterView() {
@@ -13,6 +21,9 @@ export default function PresenterView() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [gameState, setGameState] = useState<"waiting" | "question" | "answer" | "leaderboard">("waiting");
+  const [timeLeft, setTimeLeft] = useState(30); // 30 seconds per question
+  const [isTimerActive, setIsTimerActive] = useState(false);
+  const [autoAdvance, setAutoAdvance] = useState(true);
   
   const { data: event } = useQuery<any>({
     queryKey: ["/api/events", eventId],
@@ -36,6 +47,28 @@ export default function PresenterView() {
 
   const currentQuestion = questions?.[currentQuestionIndex];
   const progress = questions ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
+  const timerProgress = (timeLeft / 30) * 100;
+
+  // Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isTimerActive && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            setIsTimerActive(false);
+            if (autoAdvance && gameState === "question") {
+              // Auto-advance to answer when timer expires
+              setTimeout(() => handleShowAnswer(), 500);
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isTimerActive, timeLeft, autoAdvance, gameState]);
 
   // Mock leaderboard data - would be real in production
   const leaderboard = [
@@ -49,14 +82,18 @@ export default function PresenterView() {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setShowAnswer(false);
       setGameState("question");
+      setTimeLeft(30);
+      setIsTimerActive(true);
     } else {
       setGameState("leaderboard");
+      setIsTimerActive(false);
     }
   };
 
   const handleShowAnswer = () => {
     setShowAnswer(true);
     setGameState("answer");
+    setIsTimerActive(false);
   };
 
   const handleShowLeaderboard = () => {
@@ -67,6 +104,14 @@ export default function PresenterView() {
     setCurrentQuestionIndex(0);
     setShowAnswer(false);
     setGameState("waiting");
+    setTimeLeft(30);
+    setIsTimerActive(false);
+  };
+
+  const handleStartGame = () => {
+    setGameState("question");
+    setTimeLeft(30);
+    setIsTimerActive(true);
   };
 
   if (!event) {
@@ -117,7 +162,7 @@ export default function PresenterView() {
               Question {currentQuestionIndex + 1} of {questions?.length || 0}
             </span>
           </div>
-          <Progress value={progress} className="h-2 bg-white/20" data-testid="progress-game" />
+          <SimpleProgress value={progress} className="h-2 bg-white/20" data-testid="progress-game" />
         </div>
       </div>
 
@@ -144,9 +189,28 @@ export default function PresenterView() {
                   <CardTitle className="text-3xl">
                     Question {currentQuestionIndex + 1}
                   </CardTitle>
-                  <Badge variant="secondary" className="bg-champagne-200 text-champagne-900 text-lg px-4 py-2">
-                    {currentQuestion.difficulty}
-                  </Badge>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <div className={`text-4xl font-bold ${
+                        timeLeft <= 10 ? 'text-red-400 animate-pulse' : 
+                        timeLeft <= 20 ? 'text-yellow-400' : 'text-green-400'
+                      }`} data-testid="text-timer">
+                        {timeLeft}s
+                      </div>
+                      <div className="w-24">
+                        <SimpleProgress 
+                          value={timerProgress} 
+                          className={`h-2 ${
+                            timeLeft <= 10 ? 'bg-red-200' : 
+                            timeLeft <= 20 ? 'bg-yellow-200' : 'bg-green-200'
+                          }`} 
+                        />
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="bg-champagne-200 text-champagne-900 text-lg px-4 py-2">
+                      {currentQuestion.difficulty}
+                    </Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-8">
@@ -255,7 +319,7 @@ export default function PresenterView() {
           {gameState === "waiting" && (
             <>
               <Button
-                onClick={() => setGameState("question")}
+                onClick={handleStartGame}
                 className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-semibold"
                 data-testid="button-start-game"
               >
@@ -267,6 +331,22 @@ export default function PresenterView() {
 
           {gameState === "question" && (
             <>
+              <div className="flex items-center space-x-4">
+                <div className={`text-2xl font-bold ${
+                  timeLeft <= 10 ? 'text-red-400' : 
+                  timeLeft <= 20 ? 'text-yellow-400' : 'text-white'
+                }`}>
+                  Time: {timeLeft}s
+                </div>
+                <Button
+                  onClick={() => setIsTimerActive(!isTimerActive)}
+                  variant="outline"
+                  className="border-white/30 text-white hover:bg-white/10"
+                  data-testid="button-toggle-timer"
+                >
+                  {isTimerActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </Button>
+              </div>
               <Button
                 onClick={handleShowAnswer}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-lg"
@@ -295,7 +375,7 @@ export default function PresenterView() {
                 data-testid="button-next-question"
               >
                 <ChevronRight className="mr-2 h-5 w-5" />
-                Next Question
+                {questions && currentQuestionIndex >= questions.length - 1 ? "Finish Game" : "Next Question"}
               </Button>
               <Button
                 onClick={handleShowLeaderboard}
@@ -305,6 +385,15 @@ export default function PresenterView() {
               >
                 <Trophy className="mr-2 h-4 w-4" />
                 Show Leaderboard
+              </Button>
+              <Button
+                onClick={() => setAutoAdvance(!autoAdvance)}
+                variant="outline"
+                size="sm"
+                className="border-white/30 text-white hover:bg-white/10"
+                data-testid="button-toggle-auto"
+              >
+                {autoAdvance ? "Auto: ON" : "Auto: OFF"}
               </Button>
             </>
           )}

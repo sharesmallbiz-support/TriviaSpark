@@ -101,6 +101,7 @@ function EventManage() {
     { id: 'team2', name: 'Team 2', selectedAnswer: null, answerLocked: false, score: 0 }
   ]);
   const [showBetweenQuestions, setShowBetweenQuestions] = useState(false);
+  const [showFinalResults, setShowFinalResults] = useState(false);
   const [funFactsText, setFunFactsText] = useState('');
   const [editingFunFacts, setEditingFunFacts] = useState(false);
 
@@ -263,6 +264,7 @@ function EventManage() {
     setTimeLeft(30);
     setFinalCountdown(0);
     setShowBetweenQuestions(false);
+    setShowFinalResults(false);
     setParticipants(prev => prev.map(p => ({
       ...p,
       selectedAnswer: null,
@@ -279,14 +281,8 @@ function EventManage() {
         setTimerActive(true);
       }, 5000); // Show between-questions view for 5 seconds
     } else {
-      setDryRunActive(false);
-      setCurrentQuestionIndex(0);
-      resetQuestionState();
-      const finalScores = participants.map(p => `${p.name}: ${p.score}`).join(', ');
-      toast({
-        title: "Dry Run Complete",
-        description: `Final scores - ${finalScores}`,
-      });
+      // Show final results instead of ending immediately
+      setShowFinalResults(true);
     }
   };
 
@@ -340,6 +336,20 @@ function EventManage() {
     setFinalCountdown(0);
     setTimerActive(false);
     setParticipants(prev => prev.map(p => ({ ...p, score: 0, selectedAnswer: null, answerLocked: false })));
+  };
+
+  const finishDryRun = () => {
+    setDryRunActive(false);
+    setCurrentQuestionIndex(0);
+    resetQuestionState();
+    setTimeLeft(30);
+    setFinalCountdown(0);
+    setTimerActive(false);
+    setParticipants(prev => prev.map(p => ({ ...p, score: 0, selectedAnswer: null, answerLocked: false })));
+    toast({
+      title: "Dry Run Complete",
+      description: "Great job! You've completed the trivia preview.",
+    });
   };
 
   // Generate AI question mutation
@@ -1378,6 +1388,15 @@ function EventManage() {
                         />
                       )}
 
+                      {/* Final Results View */}
+                      {showFinalResults && (
+                        <FinalResultsView 
+                          participants={participants}
+                          totalQuestions={questions.length}
+                          onFinish={finishDryRun}
+                        />
+                      )}
+
                       {/* Dry Run Controls */}
                       {currentQuestion && (
                         <div className="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
@@ -1618,6 +1637,97 @@ function ParticipantView({ question, timeLeft, finalCountdown, showAnswer, answe
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Final Results View Component - Shows final leaderboard and celebration
+function FinalResultsView({ participants, totalQuestions, onFinish }: {
+  participants: Array<{ id: string; name: string; score: number; selectedAnswer: string | null; answerLocked: boolean }>;
+  totalQuestions: number;
+  onFinish: () => void;
+}) {
+  // Sort participants by score for final leaderboard
+  const sortedParticipants = [...participants].sort((a, b) => b.score - a.score);
+  const winner = sortedParticipants[0];
+  const totalPossiblePoints = totalQuestions * 30; // Max 30 points per question
+
+  return (
+    <div className="space-y-8 text-center">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 p-8 rounded-lg border-2 border-yellow-300">
+        <h2 className="text-4xl font-bold text-yellow-800 mb-2">🎉 Trivia Complete! 🎉</h2>
+        <p className="text-yellow-700 text-lg">
+          All {totalQuestions} questions have been answered
+        </p>
+      </div>
+
+      {/* Winner Announcement */}
+      <div className="bg-gradient-to-r from-champagne-100 to-wine-100 p-8 rounded-lg border-2 border-wine-200">
+        <h3 className="text-3xl font-bold text-wine-800 mb-4">👑 Winner: {winner.name}! 👑</h3>
+        <div className="text-5xl font-bold text-wine-800 mb-2">{winner.score} points</div>
+        <p className="text-wine-600 text-lg">
+          Out of {totalPossiblePoints} possible points ({Math.round((winner.score / totalPossiblePoints) * 100)}% accuracy)
+        </p>
+      </div>
+
+      {/* Final Leaderboard */}
+      <div className="bg-white p-8 rounded-lg border-2 border-gray-200 shadow-lg">
+        <h4 className="text-2xl font-bold text-gray-800 mb-6">📊 Final Leaderboard</h4>
+        <div className="space-y-4">
+          {sortedParticipants.map((participant, index) => (
+            <div key={participant.id} className={`flex items-center justify-between p-4 rounded-lg ${
+              index === 0 ? 'bg-yellow-50 border-2 border-yellow-300' : 
+              index === 1 ? 'bg-gray-50 border-2 border-gray-300' : 
+              'bg-amber-50 border-2 border-amber-300'
+            }`}>
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-xl ${
+                  index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : 'bg-amber-600'
+                }`}>
+                  {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                </div>
+                <div className="text-left">
+                  <div className="text-xl font-bold text-gray-800">{participant.name}</div>
+                  <div className="text-gray-600">
+                    {Math.round((participant.score / totalPossiblePoints) * 100)}% accuracy
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-gray-800">{participant.score}</div>
+                <div className="text-gray-600">points</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Statistics */}
+      <div className="bg-blue-50 p-6 rounded-lg border-2 border-blue-200">
+        <h4 className="text-lg font-semibold text-blue-700 mb-3">📈 Event Statistics</h4>
+        <div className="grid grid-cols-2 gap-4 text-blue-800">
+          <div>
+            <div className="text-2xl font-bold">{totalQuestions}</div>
+            <div className="text-sm">Questions Asked</div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold">{Math.round(participants.reduce((sum, p) => sum + p.score, 0) / participants.length)}</div>
+            <div className="text-sm">Average Score</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Finish Button */}
+      <div className="pt-4">
+        <Button
+          onClick={onFinish}
+          className="bg-wine-600 hover:bg-wine-700 text-white px-8 py-3 text-lg font-semibold"
+          data-testid="button-finish-dry-run"
+        >
+          🏁 Finish Dry Run
+        </Button>
+      </div>
     </div>
   );
 }

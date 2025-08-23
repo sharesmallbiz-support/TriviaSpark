@@ -383,9 +383,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: user.id,
         username: user.username,
         email: user.email,
-        fullName: user.fullName
+        fullName: user.fullName,
+        createdAt: user.createdAt
       }
     });
+  });
+
+  app.put("/api/auth/profile", async (req, res) => {
+    const sessionId = req.cookies.sessionId;
+    const session = sessionId ? sessions.get(sessionId) : null;
+    
+    if (!session || session.expiresAt < Date.now()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    const { fullName, email, username } = req.body;
+    
+    if (!fullName || !email || !username) {
+      return res.status(400).json({ error: "Full name, email, and username are required" });
+    }
+    
+    try {
+      // In a real app, you'd update the database here
+      // For now, we'll just return success since we're using in-memory storage
+      const user = await storage.getUser(session.userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Update user in memory storage
+      const updatedUser = { ...user, fullName, email, username };
+      (storage as any).users.set(session.userId, updatedUser);
+      
+      res.json({
+        user: {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          fullName: updatedUser.fullName,
+          createdAt: updatedUser.createdAt
+        }
+      });
+    } catch (error) {
+      console.error("Profile update error:", error);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
   });
 
   // Start event

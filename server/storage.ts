@@ -8,7 +8,9 @@ import {
   type Participant, 
   type InsertParticipant,
   type Response,
-  type InsertResponse
+  type InsertResponse,
+  type FunFact,
+  type InsertFunFact
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -40,6 +42,12 @@ export interface IStorage {
   getResponsesByQuestion(questionId: string): Promise<Response[]>;
   createResponse(response: InsertResponse): Promise<Response>;
   
+  // Fun Facts methods
+  getFunFactsByEvent(eventId: string): Promise<FunFact[]>;
+  createFunFact(funFact: InsertFunFact): Promise<FunFact>;
+  updateFunFact(id: string, updates: Partial<FunFact>): Promise<FunFact | undefined>;
+  deleteFunFact(id: string): Promise<boolean>;
+
   // Analytics methods
   getEventStats(hostId: string): Promise<{
     totalEvents: number;
@@ -55,6 +63,7 @@ export class MemStorage implements IStorage {
   private questions: Map<string, Question>;
   private participants: Map<string, Participant>;
   private responses: Map<string, Response>;
+  private funFacts: Map<string, FunFact>;
 
   constructor() {
     this.users = new Map();
@@ -62,6 +71,7 @@ export class MemStorage implements IStorage {
     this.questions = new Map();
     this.participants = new Map();
     this.responses = new Map();
+    this.funFacts = new Map();
     
     // Initialize with demo user
     this.initializeDemoData();
@@ -162,6 +172,48 @@ export class MemStorage implements IStorage {
     ];
     
     questions.forEach(q => this.questions.set(q.id, q));
+    
+    // Create sample fun facts for the seeded event
+    const funFacts: FunFact[] = [
+      {
+        id: "ff1-rotary-history",
+        eventId: seedEventId,
+        title: "Rotary Foundation",
+        content: "West Wichita Rotary Club has been serving the community since 1985 and has raised over $2 million for local charities! 🎉",
+        orderIndex: 1,
+        isActive: true,
+        createdAt: new Date(),
+      },
+      {
+        id: "ff2-wine-trivia",
+        eventId: seedEventId,
+        title: "Wine Knowledge",
+        content: "Did you know? The Pacific Northwest produces over 99% of American wine grapes, with Washington state being the second-largest wine producer in the US! 🍷",
+        orderIndex: 2,
+        isActive: true,
+        createdAt: new Date(),
+      },
+      {
+        id: "ff3-community-impact",
+        eventId: seedEventId,
+        title: "Community Impact",
+        content: "Our trivia nights have helped fund 15 local scholarships, 3 community gardens, and countless meals for families in need. Every question answered makes a difference! 💝",
+        orderIndex: 3,
+        isActive: true,
+        createdAt: new Date(),
+      },
+      {
+        id: "ff4-event-stats",
+        eventId: seedEventId,
+        title: "Event Statistics",
+        content: "This is our 12th annual Coast to Cascades event! Together, we've welcomed over 600 guests and created lasting memories while supporting worthy causes. 🌟",
+        orderIndex: 4,
+        isActive: true,
+        createdAt: new Date(),
+      }
+    ];
+    
+    funFacts.forEach(ff => this.funFacts.set(ff.id, ff));
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -342,6 +394,7 @@ export class MemStorage implements IStorage {
       submittedAt: new Date(),
       points: insertResponse.points || null,
       responseTime: insertResponse.responseTime || null,
+      timeRemaining: insertResponse.timeRemaining || null,
     };
     this.responses.set(id, response);
     return response;
@@ -379,6 +432,38 @@ export class MemStorage implements IStorage {
       totalQuestions,
       averageRating,
     };
+  }
+
+  async getFunFactsByEvent(eventId: string): Promise<FunFact[]> {
+    return Array.from(this.funFacts.values())
+      .filter(funFact => funFact.eventId === eventId && funFact.isActive)
+      .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
+  }
+
+  async createFunFact(insertFunFact: InsertFunFact): Promise<FunFact> {
+    const id = randomUUID();
+    const funFact: FunFact = {
+      ...insertFunFact,
+      id,
+      createdAt: new Date(),
+      isActive: insertFunFact.isActive ?? true,
+      orderIndex: insertFunFact.orderIndex || 0,
+    };
+    this.funFacts.set(id, funFact);
+    return funFact;
+  }
+
+  async updateFunFact(id: string, updates: Partial<FunFact>): Promise<FunFact | undefined> {
+    const funFact = this.funFacts.get(id);
+    if (!funFact) return undefined;
+    
+    const updatedFunFact = { ...funFact, ...updates };
+    this.funFacts.set(id, updatedFunFact);
+    return updatedFunFact;
+  }
+
+  async deleteFunFact(id: string): Promise<boolean> {
+    return this.funFacts.delete(id);
   }
 }
 

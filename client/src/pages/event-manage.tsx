@@ -90,9 +90,10 @@ function EventManage() {
   const [answersLocked, setAnswersLocked] = useState(false);
   const [timerActive, setTimerActive] = useState(false);
   const [viewMode, setViewMode] = useState<'both' | 'presenter' | 'participant'>('both');
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [answerLocked, setAnswerLocked] = useState(false);
-  const [score, setScore] = useState(0);
+  const [participants, setParticipants] = useState([
+    { id: 'team1', name: 'Team 1', selectedAnswer: null, answerLocked: false, score: 0 },
+    { id: 'team2', name: 'Team 2', selectedAnswer: null, answerLocked: false, score: 0 }
+  ]);
   const [showBetweenQuestions, setShowBetweenQuestions] = useState(false);
   const [funFactsText, setFunFactsText] = useState('');
   const [editingFunFacts, setEditingFunFacts] = useState(false);
@@ -255,9 +256,12 @@ function EventManage() {
     setAnswersLocked(false);
     setTimeLeft(30);
     setFinalCountdown(0);
-    setSelectedAnswer(null);
-    setAnswerLocked(false);
     setShowBetweenQuestions(false);
+    setParticipants(prev => prev.map(p => ({
+      ...p,
+      selectedAnswer: null,
+      answerLocked: false
+    })));
   };
 
   const nextQuestion = () => {
@@ -272,31 +276,35 @@ function EventManage() {
       setDryRunActive(false);
       setCurrentQuestionIndex(0);
       resetQuestionState();
+      const finalScores = participants.map(p => `${p.name}: ${p.score}`).join(', ');
       toast({
         title: "Dry Run Complete",
-        description: `You've reviewed all questions! Final score: ${score} points`,
+        description: `Final scores - ${finalScores}`,
       });
     }
   };
 
-  const handleAnswerSelect = (answer: string) => {
-    if (!answerLocked && !answersLocked) {
-      setSelectedAnswer(answer);
-    }
+  const handleAnswerSelect = (teamId: string, answer: string) => {
+    setParticipants(prev => prev.map(p => {
+      if (p.id === teamId && !p.answerLocked && !answersLocked) {
+        return { ...p, selectedAnswer: answer };
+      }
+      return p;
+    }));
   };
 
-  const handleLockAnswer = () => {
-    if (selectedAnswer && !answerLocked && !answersLocked) {
-      setAnswerLocked(true);
-      const points = timeLeft; // Score equals seconds remaining
-      setScore(score + points);
-      setTimerActive(false);
-      
-      // Show answer after locking
-      setTimeout(() => {
-        setShowAnswer(true);
-      }, 1000);
-    }
+  const handleLockAnswer = (teamId: string) => {
+    setParticipants(prev => prev.map(p => {
+      if (p.id === teamId && p.selectedAnswer && !p.answerLocked && !answersLocked) {
+        const points = timeLeft; // Score equals seconds remaining
+        return {
+          ...p,
+          answerLocked: true,
+          score: p.score + points
+        };
+      }
+      return p;
+    }));
   };
 
   const handleSaveFunFacts = () => {
@@ -322,10 +330,10 @@ function EventManage() {
     setDryRunActive(false);
     setCurrentQuestionIndex(0);
     resetQuestionState();
-    setScore(0);
     setTimeLeft(30);
     setFinalCountdown(0);
     setTimerActive(false);
+    setParticipants(prev => prev.map(p => ({ ...p, score: 0, selectedAnswer: null, answerLocked: false })));
   };
 
   // Generate AI question mutation
@@ -1283,18 +1291,25 @@ function EventManage() {
                           
                           {/* Participant View */}
                           <div className="space-y-4">
-                            <h4 className="text-lg font-semibold text-wine-700">👥 Participant View (Score: {score} pts)</h4>
-                            <ParticipantView 
-                              question={currentQuestion} 
-                              timeLeft={timeLeft}
-                              finalCountdown={finalCountdown}
-                              showAnswer={showAnswer}
-                              answersLocked={answersLocked}
-                              selectedAnswer={selectedAnswer}
-                              answerLocked={answerLocked}
-                              onAnswerSelect={handleAnswerSelect}
-                              onLockAnswer={handleLockAnswer}
-                            />
+                            <h4 className="text-lg font-semibold text-wine-700">👥 Participants View</h4>
+                            <div className="space-y-6">
+                              {participants.map(participant => (
+                                <div key={participant.id} className="space-y-2">
+                                  <h5 className="text-md font-semibold text-wine-700">{participant.name} (Score: {participant.score})</h5>
+                                  <ParticipantView 
+                                    question={currentQuestion} 
+                                    timeLeft={timeLeft}
+                                    finalCountdown={finalCountdown}
+                                    showAnswer={showAnswer}
+                                    answersLocked={answersLocked}
+                                    selectedAnswer={participant.selectedAnswer}
+                                    answerLocked={participant.answerLocked}
+                                    onAnswerSelect={(answer) => handleAnswerSelect(participant.id, answer)}
+                                    onLockAnswer={() => handleLockAnswer(participant.id)}
+                                  />
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1586,12 +1601,15 @@ function ParticipantView({ question, timeLeft, finalCountdown, showAnswer, answe
 }
 
 // Between Questions View Component - Shows leaderboard and fun facts
-function BetweenQuestionsView({ score, currentQuestionIndex, totalQuestions, funFact }: {
-  score: number;
+function BetweenQuestionsView({ participants, currentQuestionIndex, totalQuestions, funFacts }: {
+  participants: Array<{ id: string; name: string; score: number; selectedAnswer: string | null; answerLocked: boolean }>;
   currentQuestionIndex: number;
   totalQuestions: number;
-  funFact: string;
+  funFacts: string[];
 }) {
+  // Sort participants by score for leaderboard
+  const sortedParticipants = [...participants].sort((a, b) => b.score - a.score);
+  const randomFunFact = funFacts[Math.floor(Math.random() * funFacts.length)];
   return (
     <div className="space-y-6 text-center">
       {/* Progress */}
@@ -1604,17 +1622,31 @@ function BetweenQuestionsView({ score, currentQuestionIndex, totalQuestions, fun
         </p>
       </div>
 
-      {/* Score Display */}
+      {/* Leaderboard */}
       <div className="bg-gradient-to-r from-champagne-100 to-wine-100 p-8 rounded-lg border-2 border-wine-200">
-        <h4 className="text-lg font-semibold text-wine-700 mb-4">🏆 Current Score</h4>
-        <div className="text-4xl font-bold text-wine-800 mb-2">{score} points</div>
-        <p className="text-wine-600">Keep it up! More points for faster answers!</p>
+        <h4 className="text-lg font-semibold text-wine-700 mb-4">🏆 Leaderboard</h4>
+        <div className="space-y-3">
+          {sortedParticipants.map((participant, index) => (
+            <div key={participant.id} className="flex items-center justify-between bg-white/50 p-3 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${
+                  index === 0 ? 'bg-yellow-500' : index === 1 ? 'bg-gray-400' : 'bg-amber-600'
+                }`}>
+                  {index + 1}
+                </div>
+                <span className="font-semibold text-wine-800">{participant.name}</span>
+              </div>
+              <div className="text-xl font-bold text-wine-800">{participant.score} pts</div>
+            </div>
+          ))}
+        </div>
+        <p className="text-wine-600 text-center mt-4">Keep it up! More points for faster answers!</p>
       </div>
 
       {/* Fun Fact */}
       <div className="bg-blue-50 p-6 rounded-lg border-2 border-blue-200">
         <h4 className="text-lg font-semibold text-blue-700 mb-3">🎉 Did You Know?</h4>
-        <p className="text-blue-800 text-lg leading-relaxed">{funFact}</p>
+        <p className="text-blue-800 text-lg leading-relaxed">{randomFunFact}</p>
       </div>
 
       {/* Next Question Countdown */}

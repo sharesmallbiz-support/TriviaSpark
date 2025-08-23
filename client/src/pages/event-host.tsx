@@ -139,33 +139,42 @@ export default function EventHost() {
               <CardTitle data-testid="text-control-panel-title">Event Control Panel</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center space-x-4">
-                {event.status === "draft" ? (
-                  <Button 
-                    onClick={() => startEventMutation.mutate()} 
-                    disabled={startEventMutation.isPending}
-                    className="trivia-button-primary"
-                    data-testid="button-start-event"
-                  >
-                    <Play className="mr-2 h-4 w-4" />
-                    {startEventMutation.isPending ? "Starting..." : "Start Event"}
-                  </Button>
-                ) : (
-                  <Button className="trivia-button-secondary" disabled data-testid="button-pause-event">
-                    <Pause className="mr-2 h-4 w-4" />
-                    Pause Event
-                  </Button>
-                )}
-                
-                <div className="flex items-center text-sm text-gray-600">
-                  <Users className="mr-1 h-4 w-4" />
-                  <span data-testid="text-participant-count">{participants?.length || 0} participants</span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  {event.status === "draft" ? (
+                    <Button 
+                      onClick={() => startEventMutation.mutate()} 
+                      disabled={startEventMutation.isPending}
+                      className="trivia-button-primary"
+                      data-testid="button-start-event"
+                    >
+                      <Play className="mr-2 h-4 w-4" />
+                      {startEventMutation.isPending ? "Starting..." : "Start Event"}
+                    </Button>
+                  ) : (
+                    <Button className="trivia-button-secondary" disabled data-testid="button-pause-event">
+                      <Pause className="mr-2 h-4 w-4" />
+                      Pause Event
+                    </Button>
+                  )}
+                  
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Users className="mr-1 h-4 w-4" />
+                    <span data-testid="text-participant-count">{participants?.length || 0} participants</span>
+                  </div>
+                  
+                  <div className="flex items-center text-sm text-gray-600">
+                    <Clock className="mr-1 h-4 w-4" />
+                    <span data-testid="text-question-count">{questions?.length || 0} questions</span>
+                  </div>
                 </div>
                 
-                <div className="flex items-center text-sm text-gray-600">
-                  <Clock className="mr-1 h-4 w-4" />
-                  <span data-testid="text-question-count">{questions?.length || 0} questions</span>
-                </div>
+                <Link href={`/presenter/${eventId}`}>
+                  <Button variant="outline" className="trivia-button-outline" data-testid="button-presenter-view">
+                    <Trophy className="mr-2 h-4 w-4" />
+                    Presenter View
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>

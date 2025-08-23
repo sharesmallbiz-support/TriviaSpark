@@ -289,6 +289,23 @@ export class MemStorage implements IStorage {
     return questions;
   }
 
+  async getQuestion(id: string): Promise<Question | undefined> {
+    return this.questions.get(id);
+  }
+
+  async updateQuestion(id: string, updates: Partial<Question>): Promise<Question | undefined> {
+    const question = this.questions.get(id);
+    if (!question) return undefined;
+    
+    const updatedQuestion = { ...question, ...updates };
+    this.questions.set(id, updatedQuestion);
+    return updatedQuestion;
+  }
+
+  async deleteQuestion(id: string): Promise<boolean> {
+    return this.questions.delete(id);
+  }
+
   async getParticipantsByEvent(eventId: string): Promise<Participant[]> {
     return Array.from(this.participants.values())
       .filter(participant => participant.eventId === eventId);

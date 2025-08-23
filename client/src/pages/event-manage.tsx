@@ -24,7 +24,11 @@ import {
   Building2,
   Clock,
   Trophy,
-  Settings
+  Settings,
+  Plus,
+  Edit,
+  Trash2,
+  Sparkles
 } from "lucide-react";
 
 type Event = {
@@ -77,6 +81,9 @@ function EventManage() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [dryRunActive, setDryRunActive] = useState(false);
   const [showAnswer, setShowAnswer] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiTopic, setAiTopic] = useState("");
 
   const eventId = params?.id;
 
@@ -251,6 +258,250 @@ function EventManage() {
     setShowAnswer(false);
   };
 
+  // Generate AI question mutation
+  const generateQuestionMutation = useMutation({
+    mutationFn: async ({ topic, type }: { topic: string; type: string }) => {
+      const response = await fetch("/api/questions/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          eventId,
+          topic,
+          type,
+          count: 1
+        }),
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to generate question");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "questions"] });
+      setAiTopic("");
+      toast({
+        title: "Question Generated",
+        description: "AI question has been added to your event.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Generation Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Update question mutation
+  const updateQuestionMutation = useMutation({
+    mutationFn: async (question: Question) => {
+      const response = await fetch(`/api/questions/${question.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(question),
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update question");
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "questions"] });
+      setEditingQuestion(null);
+      toast({
+        title: "Question Updated",
+        description: "Question has been saved successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Delete question mutation
+  const deleteQuestionMutation = useMutation({
+    mutationFn: async (questionId: string) => {
+      const response = await fetch(`/api/questions/${questionId}`, {
+        method: "DELETE",
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to delete question");
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/events", eventId, "questions"] });
+      toast({
+        title: "Question Deleted",
+        description: "Question has been removed from your event.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Delete Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleGenerateAIQuestion = (type: string) => {
+    if (!aiTopic.trim()) {
+      toast({
+        title: "Topic Required",
+        description: "Please enter a topic for the AI question.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsGenerating(true);
+    generateQuestionMutation.mutate({ topic: aiTopic, type }, {
+      onSettled: () => setIsGenerating(false)
+    });
+  };
+
+  // EditQuestionForm component
+  function EditQuestionForm({ question, onSave, onCancel, isLoading }: {
+    question: Question;
+    onSave: (question: Question) => void;
+    onCancel: () => void;
+    isLoading: boolean;
+  }) {
+    const [editForm, setEditForm] = useState({
+      question: question.question,
+      correctAnswer: question.correctAnswer,
+      options: Array.isArray(question.options) ? [...question.options] : [],
+      points: question.points || 100,
+      timeLimit: question.timeLimit || 30
+    });
+
+    const updateOption = (index: number, value: string) => {
+      const newOptions = [...editForm.options];
+      newOptions[index] = value;
+      setEditForm({ ...editForm, options: newOptions });
+    };
+
+    const handleSave = () => {
+      const updatedQuestion = {
+        ...question,
+        question: editForm.question,
+        correctAnswer: editForm.correctAnswer,
+        options: editForm.options,
+        points: editForm.points,
+        timeLimit: editForm.timeLimit
+      };
+      onSave(updatedQuestion);
+    };
+
+    return (
+      <div className="space-y-4">
+        <div>
+          <Label>Question</Label>
+          <Textarea
+            value={editForm.question}
+            onChange={(e) => setEditForm({ ...editForm, question: e.target.value })}
+            className="mt-1"
+            rows={2}
+            data-testid="textarea-edit-question"
+          />
+        </div>
+        
+        {question.type === 'multiple_choice' && (
+          <div>
+            <Label>Options</Label>
+            <div className="space-y-2 mt-1">
+              {editForm.options.map((option, index) => (
+                <div key={index} className="flex gap-2">
+                  <span className="w-8 h-10 bg-gray-100 rounded flex items-center justify-center text-sm font-medium">
+                    {String.fromCharCode(65 + index)}
+                  </span>
+                  <Input
+                    value={option}
+                    onChange={(e) => updateOption(index, e.target.value)}
+                    placeholder={`Option ${String.fromCharCode(65 + index)}`}
+                    data-testid={`input-edit-option-${index}`}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label>Correct Answer</Label>
+            <Input
+              value={editForm.correctAnswer}
+              onChange={(e) => setEditForm({ ...editForm, correctAnswer: e.target.value })}
+              className="mt-1"
+              data-testid="input-edit-correct-answer"
+            />
+          </div>
+          <div>
+            <Label>Points</Label>
+            <Input
+              type="number"
+              value={editForm.points}
+              onChange={(e) => setEditForm({ ...editForm, points: parseInt(e.target.value) || 100 })}
+              className="mt-1"
+              min="10"
+              max="500"
+              data-testid="input-edit-points"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-2 pt-2">
+          <Button
+            onClick={handleSave}
+            disabled={isLoading}
+            className="flex-1"
+            data-testid="button-save-question"
+          >
+            {isLoading ? (
+              <>
+                <Save className="mr-2 h-4 w-4 animate-pulse" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                Save Changes
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={onCancel}
+            variant="outline"
+            disabled={isLoading}
+            data-testid="button-cancel-edit"
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (eventLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-wine-50 to-champagne-50 flex items-center justify-center">
@@ -319,10 +570,14 @@ function EventManage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="details" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3" data-testid="tabs-event-management">
+          <TabsList className="grid w-full grid-cols-4" data-testid="tabs-event-management">
             <TabsTrigger value="details" data-testid="tab-details">
               <Settings className="mr-2 h-4 w-4" />
               Event Details
+            </TabsTrigger>
+            <TabsTrigger value="trivia" data-testid="tab-trivia">
+              <Brain className="mr-2 h-4 w-4" />
+              Event Trivia
             </TabsTrigger>
             <TabsTrigger value="status" data-testid="tab-status">
               <Trophy className="mr-2 h-4 w-4" />
@@ -491,6 +746,172 @@ function EventManage() {
                 </form>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Event Trivia Tab */}
+          <TabsContent value="trivia">
+            <div className="space-y-6">
+              {/* AI Generation Section */}
+              <Card className="trivia-card" data-testid="card-ai-generation">
+                <CardHeader>
+                  <CardTitle className="wine-text flex items-center">
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    AI Question Generator
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="aiTopic">Topic</Label>
+                      <Input
+                        id="aiTopic"
+                        value={aiTopic}
+                        onChange={(e) => setAiTopic(e.target.value)}
+                        placeholder="e.g., Pacific Northwest wines, Local history, Sports trivia"
+                        className="mt-1"
+                        data-testid="input-ai-topic"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleGenerateAIQuestion("multiple_choice")}
+                        disabled={isGenerating || !aiTopic.trim()}
+                        variant="outline"
+                        className="flex-1"
+                        data-testid="button-generate-multiple-choice"
+                      >
+                        {isGenerating ? (
+                          <Brain className="mr-2 h-4 w-4 animate-pulse" />
+                        ) : (
+                          <Plus className="mr-2 h-4 w-4" />
+                        )}
+                        Multiple Choice
+                      </Button>
+                      <Button
+                        onClick={() => handleGenerateAIQuestion("true_false")}
+                        disabled={isGenerating || !aiTopic.trim()}
+                        variant="outline"
+                        className="flex-1"
+                        data-testid="button-generate-true-false"
+                      >
+                        {isGenerating ? (
+                          <Brain className="mr-2 h-4 w-4 animate-pulse" />
+                        ) : (
+                          <Plus className="mr-2 h-4 w-4" />
+                        )}
+                        True/False
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Questions List */}
+              <Card className="trivia-card" data-testid="card-questions-list">
+                <CardHeader>
+                  <CardTitle className="wine-text flex items-center justify-between">
+                    <span>Event Questions ({questions.length})</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {questions.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Brain className="mx-auto h-12 w-12 mb-4 text-gray-400" />
+                      <p className="mb-2">No questions yet</p>
+                      <p className="text-sm">Generate AI questions or add your own to get started</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {questions.map((question, index) => (
+                        <div
+                          key={question.id}
+                          className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                          data-testid={`question-${index}`}
+                        >
+                          {editingQuestion?.id === question.id ? (
+                            <EditQuestionForm
+                              question={editingQuestion}
+                              onSave={(updatedQuestion) => updateQuestionMutation.mutate(updatedQuestion)}
+                              onCancel={() => setEditingQuestion(null)}
+                              isLoading={updateQuestionMutation.isPending}
+                            />
+                          ) : (
+                            <div className="space-y-3">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Badge variant="secondary" className="text-xs">
+                                      #{index + 1}
+                                    </Badge>
+                                    <Badge variant="outline" className="text-xs">
+                                      {question.type.replace('_', ' ')}
+                                    </Badge>
+                                    {question.aiGenerated && (
+                                      <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600">
+                                        <Brain className="mr-1 h-3 w-3" />
+                                        AI
+                                      </Badge>
+                                    )}
+                                    <Badge variant="outline" className="text-xs">
+                                      {question.points || 100} pts
+                                    </Badge>
+                                  </div>
+                                  <h4 className="font-medium text-gray-900 mb-2">
+                                    {question.question}
+                                  </h4>
+                                  {Array.isArray(question.options) && question.options.length > 0 && (
+                                    <div className="grid grid-cols-2 gap-2 mb-2">
+                                      {question.options.map((option, optIndex) => (
+                                        <div
+                                          key={optIndex}
+                                          className={`text-sm p-2 rounded ${
+                                            option === question.correctAnswer
+                                              ? 'bg-green-100 text-green-800 font-medium'
+                                              : 'bg-gray-100 text-gray-700'
+                                          }`}
+                                        >
+                                          {String.fromCharCode(65 + optIndex)}. {option}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  <p className="text-sm text-green-600 font-medium">
+                                    Correct Answer: {question.correctAnswer}
+                                  </p>
+                                </div>
+                                <div className="flex gap-2 ml-4">
+                                  <Button
+                                    onClick={() => setEditingQuestion(question)}
+                                    variant="ghost"
+                                    size="sm"
+                                    data-testid={`button-edit-${index}`}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      if (confirm('Are you sure you want to delete this question?')) {
+                                        deleteQuestionMutation.mutate(question.id);
+                                      }
+                                    }}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    data-testid={`button-delete-${index}`}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Status Control Tab */}

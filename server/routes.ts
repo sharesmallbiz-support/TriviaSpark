@@ -513,6 +513,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update a question
+  app.put("/api/questions/:id", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+      
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const questionId = req.params.id;
+      const question = await storage.getQuestion(questionId);
+      
+      if (!question) {
+        return res.status(404).json({ error: "Question not found" });
+      }
+      
+      // Verify user owns the event this question belongs to
+      const event = await storage.getEvent(question.eventId);
+      if (!event || event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      const updatedQuestion = await storage.updateQuestion(questionId, req.body);
+      res.json(updatedQuestion);
+    } catch (error) {
+      console.error("Error updating question:", error);
+      res.status(500).json({ error: "Failed to update question" });
+    }
+  });
+
+  // Delete a question
+  app.delete("/api/questions/:id", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+      
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+      
+      const questionId = req.params.id;
+      const question = await storage.getQuestion(questionId);
+      
+      if (!question) {
+        return res.status(404).json({ error: "Question not found" });
+      }
+      
+      // Verify user owns the event this question belongs to
+      const event = await storage.getEvent(question.eventId);
+      if (!event || event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      await storage.deleteQuestion(questionId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting question:", error);
+      res.status(500).json({ error: "Failed to delete question" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

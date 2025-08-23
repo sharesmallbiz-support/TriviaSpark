@@ -49,7 +49,7 @@ export default function Login() {
         title: "Welcome back!",
         description: `Logged in as ${data.user.fullName}`,
       });
-      setLocation("/events");
+      setLocation("/dashboard");
     },
     onError: (error) => {
       toast({

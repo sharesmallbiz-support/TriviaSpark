@@ -296,17 +296,30 @@ function EventManage() {
   };
 
   const handleLockAnswer = (teamId: string) => {
-    setParticipants(prev => prev.map(p => {
-      if (p.id === teamId && p.selectedAnswer && !p.answerLocked && !answersLocked) {
-        const points = timeLeft; // Score equals seconds remaining
-        return {
-          ...p,
-          answerLocked: true,
-          score: p.score + points
-        };
+    setParticipants(prev => {
+      const newParticipants = prev.map(p => {
+        if (p.id === teamId && p.selectedAnswer && !p.answerLocked && !answersLocked) {
+          const points = timeLeft; // Score equals seconds remaining
+          return {
+            ...p,
+            answerLocked: true,
+            score: p.score + points
+          };
+        }
+        return p;
+      });
+      
+      // Check if all teams have now locked their answers
+      const allLocked = newParticipants.every(p => p.answerLocked);
+      if (allLocked) {
+        toast({
+          title: "All Teams Answered!",
+          description: "All participants have locked their answers. Revealing results...",
+        });
       }
-      return p;
-    }));
+      
+      return newParticipants;
+    });
   };
 
   const handleSaveFunFacts = () => {
@@ -507,6 +520,23 @@ function EventManage() {
       if (interval) clearInterval(interval);
     };
   }, [timerActive, timeLeft, showAnswer]);
+
+  // Auto-close question when all teams have locked their answers
+  useEffect(() => {
+    if (dryRunActive && !showAnswer && !answersLocked && participants.length > 0) {
+      const allTeamsLocked = participants.every(p => p.answerLocked);
+      if (allTeamsLocked) {
+        // All teams have locked their answers, auto-close the question
+        setTimerActive(false);
+        setAnswersLocked(true);
+        
+        // Show answer after a brief delay
+        setTimeout(() => {
+          setShowAnswer(true);
+        }, 1000);
+      }
+    }
+  }, [participants, dryRunActive, showAnswer, answersLocked]);
 
   // Reset final countdown when it reaches 0
   useEffect(() => {

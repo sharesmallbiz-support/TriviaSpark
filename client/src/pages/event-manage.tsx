@@ -1327,21 +1327,32 @@ function EventManage() {
                         ) : (
                           <div className="space-y-4">
                             <div className="text-center">
-                              <Badge variant="outline" className="text-lg px-4 py-2">
-                                Score: {score} points
-                              </Badge>
+                              <div className="space-y-2">
+                                {participants.map(participant => (
+                                  <Badge key={participant.id} variant="outline" className="text-lg px-4 py-2 mr-2">
+                                    {participant.name}: {participant.score} points
+                                  </Badge>
+                                ))}
+                              </div>
                             </div>
-                            <ParticipantView 
-                              question={currentQuestion} 
-                              timeLeft={timeLeft}
-                              finalCountdown={finalCountdown}
-                              showAnswer={showAnswer}
-                              answersLocked={answersLocked}
-                              selectedAnswer={selectedAnswer}
-                              answerLocked={answerLocked}
-                              onAnswerSelect={handleAnswerSelect}
-                              onLockAnswer={handleLockAnswer}
-                            />
+                            <div className="space-y-6">
+                              {participants.map(participant => (
+                                <div key={participant.id} className="space-y-2">
+                                  <h5 className="text-md font-semibold text-wine-700">{participant.name}</h5>
+                                  <ParticipantView 
+                                    question={currentQuestion} 
+                                    timeLeft={timeLeft}
+                                    finalCountdown={finalCountdown}
+                                    showAnswer={showAnswer}
+                                    answersLocked={answersLocked}
+                                    selectedAnswer={participant.selectedAnswer}
+                                    answerLocked={participant.answerLocked}
+                                    onAnswerSelect={(answer) => handleAnswerSelect(participant.id, answer)}
+                                    onLockAnswer={() => handleLockAnswer(participant.id)}
+                                  />
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         )
                       )}
@@ -1349,10 +1360,15 @@ function EventManage() {
                       {/* Between Questions View */}
                       {showBetweenQuestions && (
                         <BetweenQuestionsView 
-                          score={score}
+                          participants={participants}
                           currentQuestionIndex={currentQuestionIndex}
                           totalQuestions={questions.length}
-                          funFact="West Wichita Rotary Club has been serving the community since 1985 and has raised over $2 million for local charities! 🎉"
+                          funFacts={[
+                            "West Wichita Rotary Club has been serving the community since 1985 and has raised over $2 million for local charities! 🎉",
+                            "Did you know? The Pacific Northwest produces over 99% of American wine grapes, with Washington state being the second-largest wine producer in the US! 🍷",
+                            "Our trivia nights have helped fund 15 local scholarships, 3 community gardens, and countless meals for families in need. Every question answered makes a difference! 💝",
+                            "This is our 12th annual Coast to Cascades event! Together, we've welcomed over 600 guests and created lasting memories while supporting worthy causes. 🌟"
+                          ]}
                         />
                       )}
 

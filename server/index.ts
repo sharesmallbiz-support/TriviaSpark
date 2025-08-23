@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { TriviaSpark_WebSocket_Manager } from "./websocket";
+import { storage } from "./storage";
 
 const app = express();
 app.use(express.json());
@@ -43,7 +44,7 @@ app.use((req, res, next) => {
   const server = await registerRoutes(app);
   
   // Initialize WebSocket manager
-  const wsManager = new TriviaSpark_WebSocket_Manager(server);
+  const wsManager = new TriviaSpark_WebSocket_Manager(server, storage);
   
   // Make WebSocket manager available globally for route handlers
   app.set('wsManager', wsManager);

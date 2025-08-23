@@ -247,6 +247,21 @@ Respond with JSON in this format:
       ];
     }
   }
+
+  async generateCopy(prompt: string): Promise<string> {
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 400
+      });
+
+      return response.choices[0].message.content || "Unable to generate copy at this time.";
+    } catch (error) {
+      console.error("Error generating copy:", error);
+      throw new Error("Failed to generate copy");
+    }
+  }
 }
 
 export const openAIService = new OpenAIService();

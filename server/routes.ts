@@ -267,7 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Submit answer
   app.post("/api/responses", async (req, res) => {
     try {
-      const { participantId, questionId, answer, responseTime } = req.body;
+      const { participantId, questionId, answer, responseTime, timeRemaining } = req.body;
       
       if (!participantId || !questionId || !answer) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -282,7 +282,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const isCorrect = answer.toLowerCase().trim() === (question.correctAnswer || '').toLowerCase().trim();
-      const points = isCorrect ? (question.points || 100) : 0;
+      // Points = seconds remaining if correct, 0 if wrong or no time remaining
+      const points = isCorrect && timeRemaining > 0 ? timeRemaining : 0;
       
       const response = await storage.createResponse({
         participantId,
@@ -290,7 +291,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         answer,
         isCorrect,
         points,
-        responseTime: responseTime || null
+        responseTime: responseTime || null,
+        timeRemaining: timeRemaining || null
       });
       
       res.status(201).json(response);
@@ -641,13 +643,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           Create a detailed event description that explains what participants can expect, the format, and any special features.`;
       }
 
-      const response = await openAIService.openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 400
-      });
-
-      const generatedCopy = response.choices[0].message.content;
+      const generatedCopy = await openAIService.generateCopy(prompt);
 
       res.json({ 
         type,

@@ -1,6 +1,7 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { Server } from 'http';
 import { parse } from 'url';
+import { IStorage } from './storage';
 
 export interface WebSocketMessage {
   type: string;
@@ -21,8 +22,10 @@ class TriviaSpark_WebSocket_Manager {
   private wss: WebSocketServer;
   private clients: Map<WebSocket, ConnectedClient> = new Map();
   private eventClients: Map<string, Set<WebSocket>> = new Map();
+  private storage: IStorage;
 
-  constructor(server: Server) {
+  constructor(server: Server, storage: IStorage) {
+    this.storage = storage;
     this.wss = new WebSocketServer({ 
       server,
       path: '/ws'
@@ -151,9 +154,41 @@ class TriviaSpark_WebSocket_Manager {
     });
   }
 
-  private handleLockAnswer(ws: WebSocket, message: WebSocketMessage) {
+  private async handleLockAnswer(ws: WebSocket, message: WebSocketMessage) {
     const client = this.clients.get(ws);
     if (!client?.eventId) return;
+
+    // Save the response to database with time-based scoring
+    if (message.data?.questionId && message.data?.selectedAnswer && client.participantId) {
+      try {
+        // Get question to check answer and calculate points
+        const question: any = Array.from((this.storage as any).questions.values())
+          .find((q: any) => q.id === message.data.questionId);
+        
+        if (question) {
+          const isCorrect = message.data.selectedAnswer.toLowerCase().trim() === (question.correctAnswer || '').toLowerCase().trim();
+          const timeRemaining = message.data?.timeRemaining || 0;
+          // Points = seconds remaining if correct, 0 if wrong or no time remaining
+          const points = isCorrect && timeRemaining > 0 ? timeRemaining : 0;
+          
+          await this.storage.createResponse({
+            participantId: client.participantId,
+            questionId: message.data.questionId,
+            answer: message.data.selectedAnswer,
+            isCorrect,
+            points,
+            responseTime: null,
+            timeRemaining: timeRemaining
+          });
+          
+          // Update the score in the broadcast message
+          message.data.score = points;
+          message.data.isCorrect = isCorrect;
+        }
+      } catch (error) {
+        console.error("Error saving response:", error);
+      }
+    }
 
     // Broadcast locked answer to all clients in the event
     this.broadcastToEvent(client.eventId, {
@@ -163,7 +198,8 @@ class TriviaSpark_WebSocket_Manager {
         questionId: message.data?.questionId,
         selectedAnswer: message.data?.selectedAnswer,
         score: message.data?.score,
-        timeRemaining: message.data?.timeRemaining
+        timeRemaining: message.data?.timeRemaining,
+        isCorrect: message.data?.isCorrect
       },
       timestamp: Date.now()
     });

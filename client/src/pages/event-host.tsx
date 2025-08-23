@@ -30,6 +30,11 @@ export default function EventHost() {
     enabled: !!eventId,
   });
 
+  const { data: teams } = useQuery<any[]>({
+    queryKey: ["/api/events", eventId, "teams"],
+    enabled: !!eventId,
+  });
+
   const startEventMutation = useMutation({
     mutationFn: async () => {
       const response = await fetch(`/api/events/${eventId}/start`, {
@@ -164,6 +169,112 @@ export default function EventHost() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Teams & Participants */}
+          {event.status === "draft" && (
+            <Card className="trivia-card" data-testid="card-teams-participants">
+              <CardHeader>
+                <CardTitle className="flex items-center" data-testid="text-teams-participants-title">
+                  <Users className="mr-2 h-5 w-5" />
+                  Teams & Participants
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Teams Section */}
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-3">Teams ({teams?.length || 0})</h4>
+                    {teams && teams.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {teams.map((team: any) => (
+                          <div key={team.id} className="p-4 bg-champagne-50 rounded-lg border border-champagne-200" data-testid={`team-card-${team.id}`}>
+                            <div className="flex items-center justify-between mb-2">
+                              <h5 className="font-medium text-champagne-800">{team.name}</h5>
+                              {team.tableNumber && (
+                                <Badge variant="outline" className="text-xs">Table {team.tableNumber}</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 mb-2">
+                              {team.participantCount || 0}/{team.maxMembers || 6} members
+                            </p>
+                            {team.participants && team.participants.length > 0 && (
+                              <div className="space-y-1">
+                                <p className="text-xs text-gray-500 font-medium">Members:</p>
+                                {team.participants.slice(0, 3).map((participant: any, idx: number) => (
+                                  <div key={participant.id} className="text-xs text-gray-600">
+                                    • {participant.name}
+                                  </div>
+                                ))}
+                                {team.participants.length > 3 && (
+                                  <div className="text-xs text-gray-500">... and {team.participants.length - 3} more</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-500 bg-gray-50 p-4 rounded-lg text-center">
+                        No teams created yet. Participants can create teams when joining.
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  {/* Individual Participants Section */}
+                  <div>
+                    <h4 className="font-medium text-gray-900 mb-3">
+                      Individual Participants ({participants?.filter(p => !p.teamId).length || 0})
+                    </h4>
+                    {participants && participants.filter(p => !p.teamId).length > 0 ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {participants
+                          .filter((participant: any) => !participant.teamId)
+                          .map((participant: any) => (
+                            <div key={participant.id} className="p-3 bg-wine-50 rounded-lg border border-wine-200" data-testid={`participant-card-${participant.id}`}>
+                              <div className="text-sm font-medium text-wine-800 truncate">
+                                {participant.name}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {new Date(participant.joinedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                          ))
+                        }
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-500 bg-gray-50 p-4 rounded-lg text-center">
+                        No individual participants yet.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Summary Stats */}
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div className="grid grid-cols-2 gap-4 text-center">
+                      <div>
+                        <div className="text-2xl font-bold text-blue-800">{teams?.length || 0}</div>
+                        <div className="text-sm text-blue-600">Teams</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-blue-800">{participants?.length || 0}</div>
+                        <div className="text-sm text-blue-600">Total Participants</div>
+                      </div>
+                    </div>
+                    {(participants?.length || 0) > 0 && (
+                      <div className="mt-3 text-center">
+                        <div className="text-sm text-blue-700">
+                          Team Members: {participants?.filter(p => p.teamId).length || 0} • 
+                          Individual: {participants?.filter(p => !p.teamId).length || 0}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Questions List */}
           <Card className="trivia-card" data-testid="card-questions-list">

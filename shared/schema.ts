@@ -65,7 +65,18 @@ export const responses = pgTable("responses", {
   isCorrect: boolean("is_correct").notNull(),
   points: integer("points").default(0),
   responseTime: integer("response_time"), // seconds taken to answer
+  timeRemaining: integer("time_remaining"), // seconds remaining when locked
   submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+});
+
+export const funFacts = pgTable("fun_facts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").notNull().references(() => events.id),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  orderIndex: integer("order_index").default(0),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
@@ -96,17 +107,24 @@ export const insertResponseSchema = createInsertSchema(responses).omit({
   submittedAt: true,
 });
 
+export const insertFunFactSchema = createInsertSchema(funFacts).omit({
+  id: true,
+  createdAt: true,
+});
+
 export type User = typeof users.$inferSelect;
 export type Event = typeof events.$inferSelect;
 export type Question = typeof questions.$inferSelect;
 export type Participant = typeof participants.$inferSelect;
 export type Response = typeof responses.$inferSelect;
+export type FunFact = typeof funFacts.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
 export type InsertParticipant = z.infer<typeof insertParticipantSchema>;
 export type InsertResponse = z.infer<typeof insertResponseSchema>;
+export type InsertFunFact = z.infer<typeof insertFunFactSchema>;
 
 // Event generation request schema
 export const eventGenerationSchema = z.object({

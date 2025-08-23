@@ -90,6 +90,12 @@ function EventManage() {
   const [answersLocked, setAnswersLocked] = useState(false);
   const [timerActive, setTimerActive] = useState(false);
   const [viewMode, setViewMode] = useState<'both' | 'presenter' | 'participant'>('both');
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [answerLocked, setAnswerLocked] = useState(false);
+  const [score, setScore] = useState(0);
+  const [showBetweenQuestions, setShowBetweenQuestions] = useState(false);
+  const [funFactsText, setFunFactsText] = useState('');
+  const [editingFunFacts, setEditingFunFacts] = useState(false);
 
   const eventId = params?.id;
 
@@ -244,26 +250,62 @@ function EventManage() {
     setTimerActive(true);
   };
 
+  const resetQuestionState = () => {
+    setShowAnswer(false);
+    setAnswersLocked(false);
+    setTimeLeft(30);
+    setFinalCountdown(0);
+    setSelectedAnswer(null);
+    setAnswerLocked(false);
+    setShowBetweenQuestions(false);
+  };
+
   const nextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
-      setShowAnswer(false);
-      setAnswersLocked(false);
-      setTimeLeft(30);
-      setFinalCountdown(0);
-      setTimerActive(true);
+      setShowBetweenQuestions(true);
+      setTimeout(() => {
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
+        resetQuestionState();
+        setTimerActive(true);
+      }, 5000); // Show between-questions view for 5 seconds
     } else {
       setDryRunActive(false);
       setCurrentQuestionIndex(0);
-      setAnswersLocked(false);
-      setTimeLeft(30);
-      setFinalCountdown(0);
-      setTimerActive(false);
+      resetQuestionState();
       toast({
         title: "Dry Run Complete",
-        description: "You've reviewed all questions in the event.",
+        description: `You've reviewed all questions! Final score: ${score} points`,
       });
     }
+  };
+
+  const handleAnswerSelect = (answer: string) => {
+    if (!answerLocked && !answersLocked) {
+      setSelectedAnswer(answer);
+    }
+  };
+
+  const handleLockAnswer = () => {
+    if (selectedAnswer && !answerLocked && !answersLocked) {
+      setAnswerLocked(true);
+      const points = timeLeft; // Score equals seconds remaining
+      setScore(score + points);
+      setTimerActive(false);
+      
+      // Show answer after locking
+      setTimeout(() => {
+        setShowAnswer(true);
+      }, 1000);
+    }
+  };
+
+  const handleSaveFunFacts = () => {
+    // In a real app, this would save to the database
+    setEditingFunFacts(false);
+    toast({
+      title: "Fun Facts Updated",
+      description: "Event fun facts have been saved successfully.",
+    });
   };
 
   const toggleAnswer = () => {
@@ -279,8 +321,8 @@ function EventManage() {
   const stopDryRun = () => {
     setDryRunActive(false);
     setCurrentQuestionIndex(0);
-    setShowAnswer(false);
-    setAnswersLocked(false);
+    resetQuestionState();
+    setScore(0);
     setTimeLeft(30);
     setFinalCountdown(0);
     setTimerActive(false);
@@ -643,7 +685,7 @@ function EventManage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="details" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4" data-testid="tabs-event-management">
+          <TabsList className="grid w-full grid-cols-5" data-testid="tabs-event-management">
             <TabsTrigger value="details" data-testid="tab-details">
               <Settings className="mr-2 h-4 w-4" />
               Event Details
@@ -651,6 +693,10 @@ function EventManage() {
             <TabsTrigger value="trivia" data-testid="tab-trivia">
               <Brain className="mr-2 h-4 w-4" />
               Event Trivia
+            </TabsTrigger>
+            <TabsTrigger value="funfacts" data-testid="tab-funfacts">
+              <Sparkles className="mr-2 h-4 w-4" />
+              Fun Facts
             </TabsTrigger>
             <TabsTrigger value="status" data-testid="tab-status">
               <Trophy className="mr-2 h-4 w-4" />
@@ -1089,6 +1135,66 @@ function EventManage() {
             </div>
           </TabsContent>
 
+          {/* Fun Facts Management Tab */}
+          <TabsContent value="funfacts">
+            <Card className="trivia-card" data-testid="card-fun-facts">
+              <CardHeader>
+                <CardTitle className="wine-text flex items-center justify-between">
+                  <span>Fun Facts Management</span>
+                  <Button
+                    onClick={() => setEditingFunFacts(!editingFunFacts)}
+                    variant="outline"
+                    data-testid="button-edit-fun-facts"
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    {editingFunFacts ? 'Cancel' : 'Edit'}
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-gray-600">
+                    Add fun facts about your organization that will be shown between questions during the trivia event.
+                  </p>
+                  
+                  {editingFunFacts ? (
+                    <div className="space-y-4">
+                      <Textarea
+                        value={funFactsText}
+                        onChange={(e) => setFunFactsText(e.target.value)}
+                        placeholder="Enter fun facts, one per line..."
+                        className="min-h-32"
+                        data-testid="textarea-fun-facts"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleSaveFunFacts}
+                          className="trivia-button-primary"
+                          data-testid="button-save-fun-facts"
+                        >
+                          <Save className="mr-2 h-4 w-4" />
+                          Save Fun Facts
+                        </Button>
+                        <Button
+                          onClick={() => setEditingFunFacts(false)}
+                          variant="outline"
+                          data-testid="button-cancel-fun-facts"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-medium mb-2">Current Fun Facts:</h4>
+                      {funFactsText || 'No fun facts added yet. Click Edit to add some!'}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           {/* Dry Run Tab */}
           <TabsContent value="dryrun">
             <div className="space-y-4">
@@ -1177,13 +1283,17 @@ function EventManage() {
                           
                           {/* Participant View */}
                           <div className="space-y-4">
-                            <h4 className="text-lg font-semibold text-wine-700">👥 Participant View</h4>
+                            <h4 className="text-lg font-semibold text-wine-700">👥 Participant View (Score: {score} pts)</h4>
                             <ParticipantView 
                               question={currentQuestion} 
                               timeLeft={timeLeft}
                               finalCountdown={finalCountdown}
                               showAnswer={showAnswer}
                               answersLocked={answersLocked}
+                              selectedAnswer={selectedAnswer}
+                              answerLocked={answerLocked}
+                              onAnswerSelect={handleAnswerSelect}
+                              onLockAnswer={handleLockAnswer}
                             />
                           </div>
                         </div>
@@ -1200,14 +1310,35 @@ function EventManage() {
                             answersLocked={answersLocked}
                           />
                         ) : (
-                          <ParticipantView 
-                            question={currentQuestion} 
-                            timeLeft={timeLeft}
-                            finalCountdown={finalCountdown}
-                            showAnswer={showAnswer}
-                            answersLocked={answersLocked}
-                          />
+                          <div className="space-y-4">
+                            <div className="text-center">
+                              <Badge variant="outline" className="text-lg px-4 py-2">
+                                Score: {score} points
+                              </Badge>
+                            </div>
+                            <ParticipantView 
+                              question={currentQuestion} 
+                              timeLeft={timeLeft}
+                              finalCountdown={finalCountdown}
+                              showAnswer={showAnswer}
+                              answersLocked={answersLocked}
+                              selectedAnswer={selectedAnswer}
+                              answerLocked={answerLocked}
+                              onAnswerSelect={handleAnswerSelect}
+                              onLockAnswer={handleLockAnswer}
+                            />
+                          </div>
                         )
+                      )}
+
+                      {/* Between Questions View */}
+                      {showBetweenQuestions && (
+                        <BetweenQuestionsView 
+                          score={score}
+                          currentQuestionIndex={currentQuestionIndex}
+                          totalQuestions={questions.length}
+                          funFact="West Wichita Rotary Club has been serving the community since 1985 and has raised over $2 million for local charities! 🎉"
+                        />
                       )}
 
                       {/* Dry Run Controls */}
@@ -1343,12 +1474,16 @@ function PresenterView({ question, timeLeft, finalCountdown, showAnswer, answers
 }
 
 // Participant View Component - Shows what players see during the game
-function ParticipantView({ question, timeLeft, finalCountdown, showAnswer, answersLocked }: {
+function ParticipantView({ question, timeLeft, finalCountdown, showAnswer, answersLocked, selectedAnswer, answerLocked, onAnswerSelect, onLockAnswer }: {
   question: Question;
   timeLeft: number;
   finalCountdown: number;
   showAnswer: boolean;
   answersLocked: boolean;
+  selectedAnswer: string | null;
+  answerLocked: boolean;
+  onAnswerSelect: (answer: string) => void;
+  onLockAnswer: () => void;
 }) {
   return (
     <div className="relative bg-gradient-to-br from-wine-50 to-champagne-50 p-6 rounded-lg border-2 border-wine-200 shadow-sm">
@@ -1364,10 +1499,10 @@ function ParticipantView({ question, timeLeft, finalCountdown, showAnswer, answe
         </div>
       </div>
 
-      {/* Final Countdown Overlay */}
+      {/* Final Countdown Overlay - positioned to not block interactions */}
       {finalCountdown > 0 && (
-        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10 rounded-lg">
-          <div className="text-6xl font-bold text-white animate-pulse" data-testid={`participant-countdown-${finalCountdown}`}>
+        <div className="absolute top-4 right-4 bg-black bg-opacity-75 rounded-full w-16 h-16 flex items-center justify-center z-10">
+          <div className="text-2xl font-bold text-white animate-pulse" data-testid={`participant-countdown-${finalCountdown}`}>
             {finalCountdown}
           </div>
         </div>
@@ -1385,35 +1520,110 @@ function ParticipantView({ question, timeLeft, finalCountdown, showAnswer, answe
         {question.options.map((option, index) => (
           <button
             key={index}
-            disabled={answersLocked}
+            disabled={answerLocked || answersLocked}
+            onClick={() => onAnswerSelect(option)}
             className={`w-full p-4 rounded-lg border-2 text-left transition-all duration-200 ${
-              answersLocked
+              selectedAnswer === option && !answerLocked && !answersLocked
+                ? 'bg-wine-100 border-wine-400 ring-2 ring-wine-300'
+                : answersLocked || answerLocked
                 ? showAnswer && option === question.correctAnswer
                   ? 'bg-green-100 border-green-400 text-green-800 font-medium'
+                  : selectedAnswer === option
+                  ? 'bg-wine-50 border-wine-300 text-wine-800'
                   : 'bg-gray-100 border-gray-300 text-gray-600'
                 : 'bg-white border-wine-200 hover:border-wine-300 hover:bg-wine-50 cursor-pointer'
             }`}
             data-testid={`participant-option-${index}`}
           >
-            <span className="inline-block w-8 h-8 rounded-full bg-wine-200 text-wine-800 font-bold text-center leading-8 mr-3">
+            <span className={`inline-block w-8 h-8 rounded-full font-bold text-center leading-8 mr-3 ${
+              selectedAnswer === option && !answerLocked && !answersLocked
+                ? 'bg-wine-300 text-wine-800'
+                : 'bg-wine-200 text-wine-800'
+            }`}>
               {String.fromCharCode(65 + index)}
             </span>
             {option}
             {showAnswer && option === question.correctAnswer && (
               <span className="float-right text-green-600 font-bold text-xl">✓</span>
             )}
+            {selectedAnswer === option && answerLocked && (
+              <span className="float-right text-wine-600 font-bold text-xl">🔒</span>
+            )}
           </button>
         ))}
       </div>
 
-      {/* Locked State Message */}
-      {answersLocked && (
+      {/* Lock Answer Button */}
+      {selectedAnswer && !answerLocked && !answersLocked && (
+        <div className="mt-6 text-center">
+          <Button
+            onClick={onLockAnswer}
+            className="bg-wine-600 hover:bg-wine-700 text-white px-8 py-3 text-lg font-semibold"
+            data-testid="button-lock-answer"
+          >
+            🔒 Lock Answer (Score: {timeLeft} pts)
+          </Button>
+        </div>
+      )}
+
+      {/* Locked State Messages */}
+      {answerLocked && !answersLocked && (
         <div className="mt-4 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 border border-red-200 rounded-full text-red-800 font-medium">
-            🔒 Time's Up! Answers Locked
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-wine-100 border border-wine-200 rounded-full text-wine-800 font-medium">
+            ✅ Answer Locked! Waiting for time to end...
           </div>
         </div>
       )}
+      {answersLocked && (
+        <div className="mt-4 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 border border-red-200 rounded-full text-red-800 font-medium">
+            🔒 Time's Up! Answers Revealed
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Between Questions View Component - Shows leaderboard and fun facts
+function BetweenQuestionsView({ score, currentQuestionIndex, totalQuestions, funFact }: {
+  score: number;
+  currentQuestionIndex: number;
+  totalQuestions: number;
+  funFact: string;
+}) {
+  return (
+    <div className="space-y-6 text-center">
+      {/* Progress */}
+      <div className="bg-wine-50 p-6 rounded-lg border-2 border-wine-200">
+        <h3 className="text-2xl font-bold text-wine-800 mb-2">
+          Question {currentQuestionIndex + 1} Complete!
+        </h3>
+        <p className="text-wine-600">
+          {totalQuestions - currentQuestionIndex - 1} questions remaining
+        </p>
+      </div>
+
+      {/* Score Display */}
+      <div className="bg-gradient-to-r from-champagne-100 to-wine-100 p-8 rounded-lg border-2 border-wine-200">
+        <h4 className="text-lg font-semibold text-wine-700 mb-4">🏆 Current Score</h4>
+        <div className="text-4xl font-bold text-wine-800 mb-2">{score} points</div>
+        <p className="text-wine-600">Keep it up! More points for faster answers!</p>
+      </div>
+
+      {/* Fun Fact */}
+      <div className="bg-blue-50 p-6 rounded-lg border-2 border-blue-200">
+        <h4 className="text-lg font-semibold text-blue-700 mb-3">🎉 Did You Know?</h4>
+        <p className="text-blue-800 text-lg leading-relaxed">{funFact}</p>
+      </div>
+
+      {/* Next Question Countdown */}
+      <div className="text-wine-600">
+        <p>Next question starting soon...</p>
+        <div className="flex justify-center mt-2">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-wine-600"></div>
+        </div>
+      </div>
     </div>
   );
 }

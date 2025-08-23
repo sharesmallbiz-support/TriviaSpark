@@ -340,8 +340,7 @@ export default function PresenterView() {
                 </div>
                 <Button
                   onClick={() => setIsTimerActive(!isTimerActive)}
-                  variant="outline"
-                  className="border-white/30 text-white hover:bg-white/10"
+                  className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700 border"
                   data-testid="button-toggle-timer"
                 >
                   {isTimerActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -356,8 +355,7 @@ export default function PresenterView() {
               </Button>
               <Button
                 onClick={handleShowLeaderboard}
-                variant="outline"
-                className="border-white/30 text-white hover:bg-white/10 px-6 py-3"
+                className="bg-wine-700 hover:bg-wine-600 text-white border border-wine-500 px-6 py-3"
                 data-testid="button-show-leaderboard"
               >
                 <Trophy className="mr-2 h-4 w-4" />
@@ -379,8 +377,7 @@ export default function PresenterView() {
               </Button>
               <Button
                 onClick={handleShowLeaderboard}
-                variant="outline"
-                className="border-white/30 text-white hover:bg-white/10 px-6 py-3"
+                className="bg-wine-700 hover:bg-wine-600 text-white border border-wine-500 px-6 py-3"
                 data-testid="button-show-leaderboard-from-answer"
               >
                 <Trophy className="mr-2 h-4 w-4" />
@@ -388,9 +385,8 @@ export default function PresenterView() {
               </Button>
               <Button
                 onClick={() => setAutoAdvance(!autoAdvance)}
-                variant="outline"
                 size="sm"
-                className="border-white/30 text-white hover:bg-white/10"
+                className="bg-champagne-700 hover:bg-champagne-600 text-white border border-champagne-500"
                 data-testid="button-toggle-auto"
               >
                 {autoAdvance ? "Auto: ON" : "Auto: OFF"}
@@ -403,7 +399,7 @@ export default function PresenterView() {
               {questions && currentQuestionIndex < questions.length - 1 ? (
                 <Button
                   onClick={handleNextQuestion}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-semibold"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-semibold border border-blue-500"
                   data-testid="button-continue-from-leaderboard"
                 >
                   <ChevronRight className="mr-2 h-5 w-5" />
@@ -412,7 +408,7 @@ export default function PresenterView() {
               ) : (
                 <Button
                   onClick={handleRestart}
-                  className="bg-wine-600 hover:bg-wine-700 text-white px-8 py-4 text-lg font-semibold"
+                  className="bg-wine-600 hover:bg-wine-700 text-white px-8 py-4 text-lg font-semibold border border-wine-500"
                   data-testid="button-restart-game"
                 >
                   <RotateCcw className="mr-2 h-5 w-5" />
@@ -426,18 +422,16 @@ export default function PresenterView() {
           <div className="flex items-center space-x-2 ml-8">
             <Button
               onClick={handleRestart}
-              variant="outline"
               size="sm"
-              className="border-white/30 text-white hover:bg-white/10"
+              className="bg-red-700 hover:bg-red-600 text-white border border-red-500"
               data-testid="button-reset"
             >
               <RotateCcw className="h-4 w-4" />
             </Button>
             <Button
               onClick={handleShowLeaderboard}
-              variant="outline"
               size="sm"
-              className="border-white/30 text-white hover:bg-white/10"
+              className="bg-yellow-700 hover:bg-yellow-600 text-white border border-yellow-500"
               data-testid="button-leaderboard"
             >
               <Trophy className="h-4 w-4" />

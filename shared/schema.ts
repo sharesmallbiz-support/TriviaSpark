@@ -83,13 +83,25 @@ export const questions = pgTable("questions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const participants = pgTable("participants", {
+export const teams = pgTable("teams", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   eventId: varchar("event_id").notNull().references(() => events.id),
   name: text("name").notNull(),
-  teamName: text("team_name"),
+  tableNumber: integer("table_number"),
+  maxMembers: integer("max_members").default(6),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const participants = pgTable("participants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").notNull().references(() => events.id),
+  teamId: varchar("team_id").references(() => teams.id),
+  name: text("name").notNull(),
+  participantToken: varchar("participant_token").notNull().unique(), // For cookie-based auth
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
+  lastActiveAt: timestamp("last_active_at").defaultNow().notNull(),
   isActive: boolean("is_active").default(true),
+  canSwitchTeam: boolean("can_switch_team").default(true),
 });
 
 export const responses = pgTable("responses", {
@@ -132,9 +144,16 @@ export const insertQuestionSchema = createInsertSchema(questions).omit({
   createdAt: true,
 });
 
+export const insertTeamSchema = createInsertSchema(teams).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertParticipantSchema = createInsertSchema(participants).omit({
   id: true,
   joinedAt: true,
+  lastActiveAt: true,
+  participantToken: true,
 });
 
 export const insertResponseSchema = createInsertSchema(responses).omit({
@@ -150,6 +169,7 @@ export const insertFunFactSchema = createInsertSchema(funFacts).omit({
 export type User = typeof users.$inferSelect;
 export type Event = typeof events.$inferSelect;
 export type Question = typeof questions.$inferSelect;
+export type Team = typeof teams.$inferSelect;
 export type Participant = typeof participants.$inferSelect;
 export type Response = typeof responses.$inferSelect;
 export type FunFact = typeof funFacts.$inferSelect;
@@ -157,6 +177,7 @@ export type FunFact = typeof funFacts.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
+export type InsertTeam = z.infer<typeof insertTeamSchema>;
 export type InsertParticipant = z.infer<typeof insertParticipantSchema>;
 export type InsertResponse = z.infer<typeof insertResponseSchema>;
 export type InsertFunFact = z.infer<typeof insertFunFactSchema>;

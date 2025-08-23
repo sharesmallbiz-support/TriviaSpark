@@ -28,28 +28,52 @@ export default function Login() {
   const loginMutation = useMutation({
     mutationFn: async (data: LoginForm) => {
       setIsLoading(true);
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-        credentials: 'include',
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Login failed");
+      try {
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(data),
+          credentials: 'include',
+        });
+        
+        // Check if response has content
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Server returned non-JSON response");
+        }
+        
+        const responseText = await response.text();
+        if (!responseText) {
+          throw new Error("Empty response from server");
+        }
+        
+        let responseData;
+        try {
+          responseData = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error("JSON parse error:", parseError);
+          console.error("Response text:", responseText);
+          throw new Error("Invalid JSON response from server");
+        }
+        
+        if (!response.ok) {
+          throw new Error(responseData.error || "Login failed");
+        }
+        
+        return responseData;
+      } catch (error) {
+        console.error("Login request error:", error);
+        throw error;
       }
-      
-      return response.json();
     },
     onSuccess: (data) => {
       toast({
         title: "Welcome back!",
         description: `Logged in as ${data.user.fullName}`,
       });
-      setLocation("/dashboard");
+      setLocation("/events");
     },
     onError: (error) => {
       toast({

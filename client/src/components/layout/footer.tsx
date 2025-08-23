@@ -42,7 +42,7 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-wine-700 transition-colors" data-testid="link-api-docs">
+                <a href="/api-docs" className="hover:text-wine-700 transition-colors" data-testid="link-api-docs">
                   API Documentation
                 </a>
               </li>

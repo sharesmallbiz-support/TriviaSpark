@@ -409,11 +409,10 @@ function EventManage() {
     setParticipants(prev => {
       const newParticipants = prev.map(p => {
         if (p.id === teamId && p.selectedAnswer && !p.answerLocked && !answersLocked) {
-          const points = timeLeft; // Score equals seconds remaining
+          // Don't add points here - wait for server response with correct scoring
           return {
             ...p,
-            answerLocked: true,
-            score: p.score + points
+            answerLocked: true
           };
         }
         return p;
@@ -429,7 +428,6 @@ function EventManage() {
             participantId: teamId,
             questionId: questions[currentQuestionIndex].id,
             selectedAnswer: lockedParticipant.selectedAnswer,
-            score: lockedParticipant.score,
             timeRemaining: timeLeft
           }
         });
@@ -675,6 +673,27 @@ function EventManage() {
       }
     }
   }, [participants, dryRunActive, showAnswer, answersLocked, eventId, questions, currentQuestionIndex, sendMessage]);
+
+  // Handle WebSocket messages to update participant scores
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      
+      if (lastMessage.type === 'answer_locked' && lastMessage.data) {
+        const { participantId, score, isCorrect } = lastMessage.data;
+        
+        setParticipants(prev => prev.map(p => {
+          if (p.id === participantId) {
+            return {
+              ...p,
+              score: p.score + (score || 0) // Add the points from server
+            };
+          }
+          return p;
+        }));
+      }
+    }
+  }, [messages]);
 
   // Reset final countdown when it reaches 0
   useEffect(() => {

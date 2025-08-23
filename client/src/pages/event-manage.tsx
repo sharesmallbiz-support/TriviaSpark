@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
+import { useWebSocketContext } from "../contexts/WebSocketContext";
+import { WebSocketStatus } from "../components/WebSocketStatus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,6 +92,10 @@ function EventManage() {
   const [answersLocked, setAnswersLocked] = useState(false);
   const [timerActive, setTimerActive] = useState(false);
   const [viewMode, setViewMode] = useState<'both' | 'presenter' | 'participant'>('both');
+  
+  // WebSocket integration
+  const { isConnected, sendMessage, connect: wsConnect, disconnect: wsDisconnect, messages } = useWebSocketContext();
+  
   const [participants, setParticipants] = useState<Array<{
     id: string;
     name: string;
@@ -256,6 +262,22 @@ function EventManage() {
     setTimeLeft(30);
     setFinalCountdown(0);
     setTimerActive(true);
+    
+    // Connect to WebSocket as host
+    if (eventId) {
+      wsConnect(eventId, 'host', 'host-user-id', 'host');
+      
+      // Broadcast dry run start
+      sendMessage({
+        type: 'event_status_change',
+        eventId,
+        data: {
+          status: 'dry_run_started',
+          message: 'Dry run has started!',
+          question: questions[0]
+        }
+      });
+    }
   };
 
   const resetQuestionState = () => {
@@ -293,6 +315,19 @@ function EventManage() {
       }
       return p;
     }));
+    
+    // Broadcast answer selection
+    if (eventId && questions[currentQuestionIndex]) {
+      sendMessage({
+        type: 'participant_answer',
+        eventId,
+        data: {
+          participantId: teamId,
+          questionId: questions[currentQuestionIndex].id,
+          selectedAnswer: answer
+        }
+      });
+    }
   };
 
   const handleLockAnswer = (teamId: string) => {
@@ -308,6 +343,22 @@ function EventManage() {
         }
         return p;
       });
+      
+      // Broadcast locked answer
+      const lockedParticipant = newParticipants.find(p => p.id === teamId);
+      if (lockedParticipant && eventId && questions[currentQuestionIndex]) {
+        sendMessage({
+          type: 'lock_answer',
+          eventId,
+          data: {
+            participantId: teamId,
+            questionId: questions[currentQuestionIndex].id,
+            selectedAnswer: lockedParticipant.selectedAnswer,
+            score: lockedParticipant.score,
+            timeRemaining: timeLeft
+          }
+        });
+      }
       
       // Check if all teams have now locked their answers
       const allLocked = newParticipants.every(p => p.answerLocked);
@@ -530,13 +581,25 @@ function EventManage() {
         setTimerActive(false);
         setAnswersLocked(true);
         
+        // Broadcast answer reveal
+        if (eventId && questions[currentQuestionIndex]) {
+          sendMessage({
+            type: 'answer_revealed',
+            eventId,
+            data: {
+              question: questions[currentQuestionIndex],
+              leaderboard: participants.map(p => ({ name: p.name, score: p.score }))
+            }
+          });
+        }
+        
         // Show answer after a brief delay
         setTimeout(() => {
           setShowAnswer(true);
         }, 1000);
       }
     }
-  }, [participants, dryRunActive, showAnswer, answersLocked]);
+  }, [participants, dryRunActive, showAnswer, answersLocked, eventId, questions, currentQuestionIndex, sendMessage]);
 
   // Reset final countdown when it reaches 0
   useEffect(() => {

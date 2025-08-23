@@ -368,8 +368,17 @@ const ApiDocs = () => {
                     <div className="flex items-center space-x-2 mb-2">
                       <Badge className="bg-green-100 text-green-800">POST</Badge>
                       <code className="text-sm">/api/events/:id/start</code>
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">Enhanced</Badge>
                     </div>
-                    <p className="text-gray-600 mb-3">Start an event and make it active for participants</p>
+                    <p className="text-gray-600 mb-3">Start an event and lock team switching</p>
+                    <div>
+                      <h5 className="font-medium">Notes:</h5>
+                      <ul className="text-sm text-gray-600 list-disc list-inside space-y-1">
+                        <li>Changes event status to "active"</li>
+                        <li>Locks team switching for all participants</li>
+                        <li>Participants can no longer change teams after this point</li>
+                      </ul>
+                    </div>
                   </div>
 
                   <Separator />
@@ -409,15 +418,17 @@ const ApiDocs = () => {
                     <div className="flex items-center space-x-2 mb-2">
                       <Badge className="bg-green-100 text-green-800">POST</Badge>
                       <code className="text-sm">/api/events/join/:qrCode</code>
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">Enhanced</Badge>
                     </div>
-                    <p className="text-gray-600 mb-3">Join an event using QR code</p>
+                    <p className="text-gray-600 mb-3">Join an event using QR code with team management</p>
                     <div className="space-y-2">
                       <div>
                         <h5 className="font-medium">Request Body:</h5>
                         <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
 {`{
   "name": "string",
-  "teamName": "string (optional)"
+  "teamAction": "none | join | create",
+  "teamIdentifier": "string (team name or table number)"
 }`}
                         </pre>
                       </div>
@@ -428,18 +439,128 @@ const ApiDocs = () => {
   "participant": {
     "id": "string",
     "name": "string",
-    "teamName": "string",
+    "teamId": "string",
     "eventId": "string",
-    "isActive": "boolean"
+    "isActive": "boolean",
+    "canSwitchTeam": "boolean",
+    "participantToken": "string"
   },
   "event": {
     "id": "string",
     "title": "string",
-    "description": "string"
-  }
+    "description": "string",
+    "status": "string"
+  },
+  "returning": "boolean"
 }`}
                         </pre>
                       </div>
+                      <div>
+                        <h5 className="font-medium">Notes:</h5>
+                        <ul className="text-sm text-gray-600 list-disc list-inside space-y-1">
+                          <li>Uses cookie-based participant recognition</li>
+                          <li>Team switching allowed before event starts</li>
+                          <li>Supports individual or team-based participation</li>
+                          <li>Teams limited to 6 members by default</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Separator />
+
+                  {/* Get Event Teams */}
+                  <div>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Badge className="bg-blue-100 text-blue-800">GET</Badge>
+                      <code className="text-sm">/api/events/:id/teams</code>
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">New</Badge>
+                    </div>
+                    <p className="text-gray-600 mb-3">Get all teams for an event (host only)</p>
+                    <div>
+                      <h5 className="font-medium">Response:</h5>
+                      <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+{`[
+  {
+    "id": "string",
+    "eventId": "string",
+    "name": "string",
+    "tableNumber": "number",
+    "maxMembers": "number",
+    "participantCount": "number",
+    "participants": [
+      {
+        "id": "string",
+        "name": "string",
+        "joinedAt": "2024-01-01T00:00:00.000Z",
+        "canSwitchTeam": "boolean"
+      }
+    ]
+  }
+]`}
+                      </pre>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Create Team */}
+                  <div>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Badge className="bg-green-100 text-green-800">POST</Badge>
+                      <code className="text-sm">/api/events/:id/teams</code>
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">New</Badge>
+                    </div>
+                    <p className="text-gray-600 mb-3">Create a new team for an event</p>
+                    <div className="space-y-2">
+                      <div>
+                        <h5 className="font-medium">Request Body:</h5>
+                        <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+{`{
+  "name": "string",
+  "tableNumber": "number (optional)"
+}`}
+                        </pre>
+                      </div>
+                      <div>
+                        <h5 className="font-medium">Response:</h5>
+                        <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+{`{
+  "id": "string",
+  "eventId": "string",
+  "name": "string",
+  "tableNumber": "number",
+  "maxMembers": "number",
+  "createdAt": "2024-01-01T00:00:00.000Z"
+}`}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Get Teams Public */}
+                  <div>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Badge className="bg-blue-100 text-blue-800">GET</Badge>
+                      <code className="text-sm">/api/events/:qrCode/teams-public</code>
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">New</Badge>
+                    </div>
+                    <p className="text-gray-600 mb-3">Get available teams for participants (public endpoint)</p>
+                    <div>
+                      <h5 className="font-medium">Response:</h5>
+                      <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+{`[
+  {
+    "id": "string",
+    "name": "string",
+    "tableNumber": "number",
+    "maxMembers": "number",
+    "participantCount": "number"
+  }
+]`}
+                      </pre>
                     </div>
                   </div>
                 </CardContent>
@@ -597,17 +718,64 @@ const ApiDocs = () => {
 
                   <Separator />
 
+                  {/* Switch Participant Team */}
+                  <div>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Badge className="bg-yellow-100 text-yellow-800">PUT</Badge>
+                      <code className="text-sm">/api/participants/:id/team</code>
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">New</Badge>
+                    </div>
+                    <p className="text-gray-600 mb-3">Switch a participant to a different team</p>
+                    <div className="space-y-2">
+                      <div>
+                        <h5 className="font-medium">Request Body:</h5>
+                        <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+{`{
+  "teamId": "string (null to leave team)"
+}`}
+                        </pre>
+                      </div>
+                      <div>
+                        <h5 className="font-medium">Authentication:</h5>
+                        <p className="text-sm text-gray-600">Uses participant token from cookie</p>
+                      </div>
+                      <div>
+                        <h5 className="font-medium">Response:</h5>
+                        <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+{`{
+  "id": "string",
+  "name": "string",
+  "teamId": "string",
+  "eventId": "string",
+  "canSwitchTeam": "boolean",
+  "lastActiveAt": "2024-01-01T00:00:00.000Z"
+}`}
+                        </pre>
+                      </div>
+                      <div>
+                        <h5 className="font-medium">Restrictions:</h5>
+                        <ul className="text-sm text-gray-600 list-disc list-inside space-y-1">
+                          <li>Only works if canSwitchTeam is true</li>
+                          <li>Team must have available capacity</li>
+                          <li>Participant must own the token</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
                   {/* Additional MVP Endpoints Needed */}
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <h4 className="font-semibold text-blue-900 mb-3">Additional MVP Endpoints (To Be Implemented)</h4>
                     <div className="space-y-2 text-sm">
-                      <div><code>GET /api/events/:id/leaderboard</code> - Real-time event leaderboard</div>
+                      <div><code>GET /api/events/:id/leaderboard</code> - Real-time event leaderboard with team scores</div>
                       <div><code>GET /api/participants/:id/responses</code> - Get participant's responses</div>
                       <div><code>PUT /api/participants/:id</code> - Update participant information</div>
                       <div><code>DELETE /api/participants/:id</code> - Remove participant from event</div>
                       <div><code>GET /api/events/:id/analytics</code> - Event performance analytics</div>
-                      <div><code>POST /api/events/:id/teams</code> - Create teams within event</div>
-                      <div><code>GET /api/teams/:id/members</code> - Get team members</div>
+                      <div><code>PUT /api/teams/:id</code> - Update team information</div>
+                      <div><code>DELETE /api/teams/:id</code> - Delete empty team</div>
                     </div>
                   </div>
                 </CardContent>
@@ -708,6 +876,52 @@ const ApiDocs = () => {
 
                   {/* Additional Real-time Features */}
                   <div className="bg-purple-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-purple-900 mb-3">Real-time Team Events</h4>
+                    <div className="space-y-4">
+                      <div>
+                        <h5 className="font-medium">Team Member Joined</h5>
+                        <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+{`{
+  "type": "team_member_joined",
+  "eventId": "string",
+  "teamId": "string",
+  "participant": {
+    "id": "string",
+    "name": "string"
+  }
+}`}
+                        </pre>
+                      </div>
+
+                      <div>
+                        <h5 className="font-medium">Team Switched</h5>
+                        <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+{`{
+  "type": "team_switched",
+  "eventId": "string",
+  "participantId": "string",
+  "oldTeamId": "string",
+  "newTeamId": "string"
+}`}
+                        </pre>
+                      </div>
+
+                      <div>
+                        <h5 className="font-medium">Team Scoring Update</h5>
+                        <pre className="bg-gray-100 p-3 rounded text-sm overflow-x-auto">
+{`{
+  "type": "team_score_updated",
+  "eventId": "string",
+  "teamId": "string",
+  "totalPoints": "number",
+  "rank": "number"
+}`}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-purple-50 p-4 rounded-lg mt-4">
                     <h4 className="font-semibold text-purple-900 mb-3">Additional Real-time Features (To Be Implemented)</h4>
                     <div className="space-y-2 text-sm">
                       <div><strong>Live Chat:</strong> In-event participant messaging</div>

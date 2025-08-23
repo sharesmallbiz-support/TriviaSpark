@@ -124,7 +124,7 @@ function EventManage() {
         eventType: event.eventType || "",
         maxParticipants: event.maxParticipants || 50,
         difficulty: event.difficulty || "medium",
-        eventDate: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : "",
+        eventDate: event.eventDate ? new Date(new Date(event.eventDate).getTime() + new Date(event.eventDate).getTimezoneOffset() * 60000).toISOString().split('T')[0] : "",
         eventTime: event.eventTime || "",
         location: event.location || "",
         sponsoringOrganization: event.sponsoringOrganization || ""
@@ -557,27 +557,37 @@ function EventManage() {
                     <div className="flex items-center text-sm">
                       <Calendar className="mr-3 h-4 w-4 text-wine-600" />
                       <span className="font-medium">Date:</span>
-                      <span className="ml-2">{event.eventDate ? new Date(event.eventDate).toLocaleDateString() : "Not set"}</span>
+                      <span className="ml-2" data-testid="text-info-date">
+                        {event.eventDate ? new Date(new Date(event.eventDate).getTime() + new Date(event.eventDate).getTimezoneOffset() * 60000).toLocaleDateString() : "Not set"}
+                      </span>
                     </div>
                     <div className="flex items-center text-sm">
                       <Clock className="mr-3 h-4 w-4 text-wine-600" />
                       <span className="font-medium">Time:</span>
-                      <span className="ml-2">{event.eventTime || "Not set"}</span>
+                      <span className="ml-2" data-testid="text-info-time">
+                        {event.eventTime || "Not set"}
+                      </span>
                     </div>
                     <div className="flex items-center text-sm">
                       <MapPin className="mr-3 h-4 w-4 text-wine-600" />
                       <span className="font-medium">Location:</span>
-                      <span className="ml-2">{event.location || "Not set"}</span>
+                      <span className="ml-2" data-testid="text-info-location">
+                        {event.location || "Not set"}
+                      </span>
                     </div>
                     <div className="flex items-center text-sm">
                       <Building2 className="mr-3 h-4 w-4 text-wine-600" />
                       <span className="font-medium">Organization:</span>
-                      <span className="ml-2">{event.sponsoringOrganization || "Not set"}</span>
+                      <span className="ml-2" data-testid="text-info-organization">
+                        {event.sponsoringOrganization || "Not set"}
+                      </span>
                     </div>
                     <div className="flex items-center text-sm">
                       <Users className="mr-3 h-4 w-4 text-wine-600" />
                       <span className="font-medium">Max Participants:</span>
-                      <span className="ml-2">{event.maxParticipants}</span>
+                      <span className="ml-2" data-testid="text-info-max-participants">
+                        {event.maxParticipants}
+                      </span>
                     </div>
                   </div>
                 </CardContent>

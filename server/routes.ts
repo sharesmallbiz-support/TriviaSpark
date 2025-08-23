@@ -222,6 +222,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check for returning participant
+  app.get("/api/events/join/:qrCode/check", async (req, res) => {
+    try {
+      const participantToken = req.cookies.participantToken;
+      if (!participantToken) {
+        return res.status(404).json({ error: "No participant token found" });
+      }
+      
+      const existingParticipant = await storage.getParticipantByToken(participantToken);
+      if (!existingParticipant) {
+        return res.status(404).json({ error: "Participant not found" });
+      }
+      
+      // Verify the participant belongs to this event
+      const event = await storage.getEvent(existingParticipant.eventId);
+      if (!event || event.qrCode !== req.params.qrCode) {
+        return res.status(404).json({ error: "Participant not found for this event" });
+      }
+      
+      // Get team information if participant has a team
+      let team = null;
+      if (existingParticipant.teamId) {
+        team = await storage.getTeam(existingParticipant.teamId);
+      }
+      
+      res.json({
+        participant: existingParticipant,
+        team,
+        event: {
+          id: event.id,
+          title: event.title,
+          description: event.description,
+          status: event.status
+        },
+        returning: true
+      });
+    } catch (error) {
+      console.error("Error checking participant:", error);
+      res.status(404).json({ error: "Participant not found" });
+    }
+  });
+
   // Join event via QR code
   app.post("/api/events/join/:qrCode", async (req, res) => {
     try {
@@ -231,18 +273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Name is required" });
       }
       
-      // Check for existing participant via cookie
-      const participantToken = req.cookies.participantToken;
-      if (participantToken) {
-        const existingParticipant = await storage.getParticipantByToken(participantToken);
-        if (existingParticipant) {
-          return res.json({
-            participant: existingParticipant,
-            event: await storage.getEvent(existingParticipant.eventId),
-            returning: true
-          });
-        }
-      }
+      // Skip returning participant check here - use the GET endpoint instead
       
       // Find event by QR code
       const events = await storage.getEventsByHost("mark-user-id");
@@ -305,8 +336,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sameSite: 'strict'
       });
       
+      // Get team information if participant joined a team
+      let team = null;
+      if (participant.teamId) {
+        team = await storage.getTeam(participant.teamId);
+      }
+      
       res.status(201).json({
         participant,
+        team,
         event: {
           id: event.id,
           title: event.title,

@@ -57,10 +57,7 @@ export default function EventJoin() {
   useEffect(() => {
     const checkParticipant = async () => {
       try {
-        const response = await fetch(`/api/events/join/${qrCode}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: "temp" }),
+        const response = await fetch(`/api/events/join/${qrCode}/check`, {
           credentials: 'include',
         });
         
@@ -107,8 +104,8 @@ export default function EventJoin() {
     },
     onSuccess: (data) => {
       setJoinedEvent(data);
+      setCurrentParticipant(data.participant);
       if (data.returning) {
-        setCurrentParticipant(data.participant);
         toast({
           title: "Welcome back!",
           description: `You're already joined as ${data.participant.name}`,
@@ -171,7 +168,7 @@ export default function EventJoin() {
 
   // Returning participant view
   if (currentParticipant && joinedEvent) {
-    const currentTeam = teams?.find(t => t.id === currentParticipant.teamId);
+    const currentTeam = joinedEvent.team; // Use team from the joined event data
     const canSwitchTeam = currentParticipant.canSwitchTeam;
     
     return (

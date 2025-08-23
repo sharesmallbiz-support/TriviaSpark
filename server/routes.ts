@@ -200,27 +200,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get event by ID
-  app.get("/api/events/:id", async (req, res) => {
-    try {
-      const event = await storage.getEvent(req.params.id);
-      if (!event) {
-        return res.status(404).json({ error: "Event not found" });
-      }
-      
-      const questions = await storage.getQuestionsByEvent(event.id);
-      const participants = await storage.getParticipantsByEvent(event.id);
-      
-      res.json({
-        event,
-        questions,
-        participants
-      });
-    } catch (error) {
-      console.error("Error fetching event:", error);
-      res.status(500).json({ error: "Failed to fetch event" });
-    }
-  });
 
   // Start event
   app.post("/api/events/:id/start", async (req, res) => {

@@ -84,6 +84,10 @@ function EventManage() {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiTopic, setAiTopic] = useState("");
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [finalCountdown, setFinalCountdown] = useState(0); // 0 = no countdown, 1-3 = countdown number
+  const [answersLocked, setAnswersLocked] = useState(false);
+  const [timerActive, setTimerActive] = useState(false);
 
   const eventId = params?.id;
 
@@ -232,15 +236,27 @@ function EventManage() {
     setDryRunActive(true);
     setCurrentQuestionIndex(0);
     setShowAnswer(false);
+    setAnswersLocked(false);
+    setTimeLeft(30);
+    setFinalCountdown(0);
+    setTimerActive(true);
   };
 
   const nextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setShowAnswer(false);
+      setAnswersLocked(false);
+      setTimeLeft(30);
+      setFinalCountdown(0);
+      setTimerActive(true);
     } else {
       setDryRunActive(false);
       setCurrentQuestionIndex(0);
+      setAnswersLocked(false);
+      setTimeLeft(30);
+      setFinalCountdown(0);
+      setTimerActive(false);
       toast({
         title: "Dry Run Complete",
         description: "You've reviewed all questions in the event.",
@@ -249,13 +265,23 @@ function EventManage() {
   };
 
   const toggleAnswer = () => {
-    setShowAnswer(!showAnswer);
+    if (!answersLocked) {
+      setShowAnswer(!showAnswer);
+      // Stop the timer if manually showing answer
+      if (!showAnswer) {
+        setTimerActive(false);
+      }
+    }
   };
 
   const stopDryRun = () => {
     setDryRunActive(false);
     setCurrentQuestionIndex(0);
     setShowAnswer(false);
+    setAnswersLocked(false);
+    setTimeLeft(30);
+    setFinalCountdown(0);
+    setTimerActive(false);
   };
 
   // Generate AI question mutation
@@ -378,6 +404,45 @@ function EventManage() {
       onSettled: () => setIsGenerating(false)
     });
   };
+
+  // Timer logic for dry run
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (timerActive && timeLeft > 0 && !showAnswer && finalCountdown === 0) {
+      interval = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 4 && prev > 1) {
+            // Start final countdown at 3 seconds
+            setFinalCountdown(prev - 1);
+            return prev - 1;
+          } else if (prev === 1) {
+            // Time's up
+            setTimerActive(false);
+            setAnswersLocked(true);
+            setShowAnswer(true);
+            setFinalCountdown(0);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [timerActive, timeLeft, showAnswer, finalCountdown]);
+
+  // Reset final countdown when it reaches 0
+  useEffect(() => {
+    if (finalCountdown === 1) {
+      const timeout = setTimeout(() => {
+        setFinalCountdown(0);
+      }, 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [finalCountdown]);
 
   // EditQuestionForm component
   function EditQuestionForm({ question, onSave, onCancel, isLoading }: {
@@ -1060,16 +1125,32 @@ function EventManage() {
 
                     {currentQuestion && (
                       <div className="space-y-6">
-                        <div className="bg-white p-6 rounded-lg border-2 border-wine-200">
+                        <div className="relative bg-white p-6 rounded-lg border-2 border-wine-200">
                           <div className="flex items-center justify-between mb-4">
                             <Badge variant="secondary" data-testid="badge-category">
                               {currentQuestion.category}
                             </Badge>
-                            <div className="flex items-center text-sm text-gray-600">
-                              <Clock className="mr-1 h-3 w-3" />
-                              {currentQuestion.timeLimit}s
+                            <div className="flex items-center gap-4">
+                              <div className={`flex items-center text-sm ${timeLeft <= 10 ? 'text-red-600 font-bold' : 'text-gray-600'}`}>
+                                <Clock className="mr-1 h-3 w-3" />
+                                {timeLeft}s
+                              </div>
+                              {answersLocked && (
+                                <Badge variant="destructive" className="bg-red-100 text-red-800" data-testid="badge-answers-locked">
+                                  🔒 Answers Locked
+                                </Badge>
+                              )}
                             </div>
                           </div>
+
+                          {/* Final Countdown Overlay */}
+                          {finalCountdown > 0 && (
+                            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10 rounded-lg">
+                              <div className="text-8xl font-bold text-white animate-pulse" data-testid={`countdown-${finalCountdown}`}>
+                                {finalCountdown}
+                              </div>
+                            </div>
+                          )}
                           
                           <h3 className="text-xl font-semibold text-wine-800 mb-6" data-testid="text-question">
                             {currentQuestion.question}
@@ -1097,13 +1178,21 @@ function EventManage() {
                         </div>
 
                         <div className="flex items-center justify-between">
-                          <Button
-                            onClick={toggleAnswer}
-                            variant="outline"
-                            data-testid="button-show-answer"
-                          >
-                            {showAnswer ? "Hide Answer" : "Show Answer"}
-                          </Button>
+                          <div className="flex items-center gap-4">
+                            <Button
+                              onClick={toggleAnswer}
+                              variant="outline"
+                              disabled={answersLocked}
+                              data-testid="button-show-answer"
+                            >
+                              {showAnswer ? "Hide Answer" : "Show Answer"}
+                            </Button>
+                            {answersLocked && (
+                              <div className="text-sm text-gray-600">
+                                Time's up! Answer revealed automatically.
+                              </div>
+                            )}
+                          </div>
                           
                           <div className="flex gap-3">
                             <Button

@@ -4,6 +4,9 @@ import { useRoute, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { useWebSocketContext } from "../contexts/WebSocketContext";
 import { WebSocketStatus } from "../components/WebSocketStatus";
+import { BrandingTab } from "../components/event/BrandingTab";
+import { ContactTab } from "../components/event/ContactTab";
+import { DetailsTab } from "../components/event/DetailsTab";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -802,14 +805,26 @@ function EventManage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="details" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5" data-testid="tabs-event-management">
+          <TabsList className="grid w-full grid-cols-8" data-testid="tabs-event-management">
             <TabsTrigger value="details" data-testid="tab-details">
               <Settings className="mr-2 h-4 w-4" />
-              Event Details
+              Details
+            </TabsTrigger>
+            <TabsTrigger value="branding" data-testid="tab-branding">
+              <Palette className="mr-2 h-4 w-4" />
+              Branding
+            </TabsTrigger>
+            <TabsTrigger value="event-info" data-testid="tab-event-info">
+              <FileText className="mr-2 h-4 w-4" />
+              Event Info
+            </TabsTrigger>
+            <TabsTrigger value="contact" data-testid="tab-contact">
+              <Mail className="mr-2 h-4 w-4" />
+              Contact
             </TabsTrigger>
             <TabsTrigger value="trivia" data-testid="tab-trivia">
               <Brain className="mr-2 h-4 w-4" />
-              Event Trivia
+              Trivia
             </TabsTrigger>
             <TabsTrigger value="funfacts" data-testid="tab-funfacts">
               <Sparkles className="mr-2 h-4 w-4" />
@@ -817,13 +832,55 @@ function EventManage() {
             </TabsTrigger>
             <TabsTrigger value="status" data-testid="tab-status">
               <Trophy className="mr-2 h-4 w-4" />
-              Status & Control
+              Status
             </TabsTrigger>
             <TabsTrigger value="dryrun" data-testid="tab-dryrun">
               <Play className="mr-2 h-4 w-4" />
               Dry Run
             </TabsTrigger>
           </TabsList>
+
+          {/* Branding Tab */}
+          <TabsContent value="branding">
+            <BrandingTab
+              event={event}
+              onUpdate={(data: any) => {
+                // Update form data
+                Object.keys(data).forEach(key => {
+                  setValue(key as any, data[key]);
+                });
+              }}
+              isLoading={updateEventMutation.isPending}
+            />
+          </TabsContent>
+
+          {/* Event Info Tab */}
+          <TabsContent value="event-info">
+            <DetailsTab
+              event={event}
+              onUpdate={(data: any) => {
+                // Update form data
+                Object.keys(data).forEach(key => {
+                  setValue(key as any, data[key]);
+                });
+              }}
+              isLoading={updateEventMutation.isPending}
+            />
+          </TabsContent>
+
+          {/* Contact Tab */}
+          <TabsContent value="contact">
+            <ContactTab
+              event={event}
+              onUpdate={(data: any) => {
+                // Update form data
+                Object.keys(data).forEach(key => {
+                  setValue(key as any, data[key]);
+                });
+              }}
+              isLoading={updateEventMutation.isPending}
+            />
+          </TabsContent>
 
           {/* Event Details Tab */}
           <TabsContent value="details">

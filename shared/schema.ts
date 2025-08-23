@@ -26,6 +26,41 @@ export const events = pgTable("events", {
   eventTime: text("event_time"),
   location: text("location"),
   sponsoringOrganization: text("sponsoring_organization"),
+  
+  // Rich content and branding
+  logoUrl: text("logo_url"),
+  backgroundImageUrl: text("background_image_url"),
+  eventCopy: text("event_copy"), // AI-generated promotional description
+  welcomeMessage: text("welcome_message"), // Custom welcome message for participants
+  thankYouMessage: text("thank_you_message"), // Message shown after event completion
+  
+  // Theme and styling
+  primaryColor: text("primary_color").default("#7C2D12"), // wine color
+  secondaryColor: text("secondary_color").default("#FEF3C7"), // champagne color
+  fontFamily: text("font_family").default("Inter"),
+  
+  // Contact and social
+  contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
+  websiteUrl: text("website_url"),
+  socialLinks: text("social_links"), // JSON string of social media links
+  
+  // Event details
+  prizeInformation: text("prize_information"),
+  eventRules: text("event_rules"),
+  specialInstructions: text("special_instructions"),
+  accessibilityInfo: text("accessibility_info"),
+  dietaryAccommodations: text("dietary_accommodations"),
+  dressCode: text("dress_code"),
+  ageRestrictions: text("age_restrictions"),
+  technicalRequirements: text("technical_requirements"),
+  
+  // Business information
+  registrationDeadline: timestamp("registration_deadline"),
+  cancellationPolicy: text("cancellation_policy"),
+  refundPolicy: text("refund_policy"),
+  sponsorInformation: text("sponsor_information"), // JSON string of sponsor details
+  
   settings: json("settings").default({}), // theme, timing, etc.
   createdAt: timestamp("created_at").defaultNow().notNull(),
   startedAt: timestamp("started_at"),

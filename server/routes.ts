@@ -577,6 +577,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Generate AI event copy
+  app.post("/api/events/:id/generate-copy", async (req, res) => {
+    try {
+      const { type } = req.body;
+      const eventId = req.params.id;
+
+      if (!eventId) {
+        return res.status(400).json({ error: "Event ID is required" });
+      }
+
+      // Get event details from storage
+      const event = await storage.getEvent(eventId);
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      let prompt = "";
+      
+      switch (type) {
+        case 'promotional':
+          prompt = `Generate exciting promotional copy for a trivia event:
+          Title: ${event.title}
+          Type: ${event.eventType}
+          Description: ${event.description || 'Fun trivia event'}
+          Location: ${event.location || 'TBD'}
+          Max Participants: ${event.maxParticipants}
+          
+          Create engaging promotional copy to attract participants. Include excitement about the event, what to expect, and why people should join. Make it sound fun and irresistible.`;
+          break;
+          
+        case 'welcome':
+          prompt = `Generate a warm welcome message for trivia event participants:
+          Title: ${event.title}
+          Type: ${event.eventType}
+          
+          Create a friendly welcome message that participants will see when they join the event. Make them feel excited and welcome.`;
+          break;
+          
+        case 'thankyou':
+          prompt = `Generate a thank you message for trivia event completion:
+          Title: ${event.title}
+          Type: ${event.eventType}
+          
+          Create a gracious thank you message that participants will see after completing the trivia event. Express appreciation for their participation.`;
+          break;
+          
+        case 'rules':
+          prompt = `Generate clear, friendly event rules for a trivia event:
+          Title: ${event.title}
+          Type: ${event.eventType}
+          Max Participants: ${event.maxParticipants}
+          
+          Create simple, easy-to-understand rules that explain how the trivia works, scoring, and any important guidelines.`;
+          break;
+          
+        default:
+          prompt = `Generate a detailed event description for:
+          Title: ${event.title}
+          Type: ${event.eventType}
+          Description: ${event.description || 'Fun trivia event'}
+          
+          Create a detailed event description that explains what participants can expect, the format, and any special features.`;
+      }
+
+      const response = await openAIService.openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 400
+      });
+
+      const generatedCopy = response.choices[0].message.content;
+
+      res.json({ 
+        type,
+        copy: generatedCopy,
+        eventId 
+      });
+
+    } catch (error) {
+      console.error('Error generating AI copy:', error);
+      res.status(500).json({ error: "Failed to generate copy" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

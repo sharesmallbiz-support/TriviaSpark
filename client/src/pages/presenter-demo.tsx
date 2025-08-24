@@ -3,7 +3,7 @@ import { useParams } from "wouter";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, Trophy, Play, ArrowRight, RotateCcw, Pause } from "lucide-react";
+import { Star, Trophy, Play, ArrowRight, RotateCcw, Pause, SkipForward, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 // SimpleProgress component will be inline
 const SimpleProgress = ({ value, className }: { value: number; className?: string }) => (
@@ -26,6 +26,7 @@ export default function PresenterDemo() {
   const [showAnswer, setShowAnswer] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isTimerActive, setIsTimerActive] = useState(false);
+  const [autoAdvance, setAutoAdvance] = useState(true);
 
   // Fetch event data
   const { data: event } = useQuery({
@@ -51,22 +52,24 @@ export default function PresenterDemo() {
 
   // Timer logic
   useEffect(() => {
-    if (!isTimerActive) return;
-
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          setIsTimerActive(false);
-          setShowAnswer(true);
-          setGameState("answer");
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
+    let interval: NodeJS.Timeout;
+    if (isTimerActive && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            setIsTimerActive(false);
+            if (autoAdvance && gameState === "question") {
+              // Auto-advance to answer when timer expires
+              setTimeout(() => handleShowAnswer(), 500);
+            }
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
     return () => clearInterval(interval);
-  }, [isTimerActive, timeLeft]);
+  }, [isTimerActive, timeLeft, autoAdvance, gameState]);
 
   const handleStartGame = () => {
     setGameState("question");
@@ -104,6 +107,14 @@ export default function PresenterDemo() {
 
   const toggleTimer = () => {
     setIsTimerActive(!isTimerActive);
+  };
+
+  const handleSkipForward = () => {
+    if (gameState === "question") {
+      handleShowAnswer();
+    } else if (gameState === "answer") {
+      handleNextQuestion();
+    }
   };
 
   if (!event) {
@@ -330,57 +341,82 @@ export default function PresenterDemo() {
       </div>
 
       {/* Control Panel - Fixed at bottom */}
-      <div className="flex-shrink-0 bg-black/20 backdrop-blur-sm border-t border-white/20 p-4">
-        <div className="flex items-center justify-center space-x-4 max-w-4xl mx-auto">
-          {gameState === "question" && (
+      <div className="absolute bottom-0 left-0 right-0 bg-black/90 backdrop-blur-sm border-t border-white/20 p-2 lg:p-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-center space-x-2 lg:space-x-4">
+          {gameState === "waiting" && (
             <>
-              <Button 
-                onClick={toggleTimer}
-                variant="outline"
-                className="border-champagne-400 text-champagne-200 hover:bg-champagne-500/20"
+              <Button
+                onClick={handleStartGame}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 lg:px-8 py-2 lg:py-4 text-base lg:text-lg font-semibold"
               >
-                {isTimerActive ? <Pause className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-                {isTimerActive ? "Pause Timer" : "Resume Timer"}
-              </Button>
-              <Button 
-                onClick={handleShowAnswer}
-                className="bg-green-600 hover:bg-green-500 text-white"
-              >
-                <Star className="h-4 w-4 mr-2" />
-                Show Answer
+                <Play className="mr-2 h-5 w-5" />
+                Start Demo
               </Button>
             </>
           )}
-          
-          {gameState === "answer" && (
-            <Button 
-              onClick={handleNextQuestion}
-              className="bg-champagne-500 hover:bg-champagne-400 text-champagne-900"
-            >
-              {questions && currentQuestionIndex < questions.length - 1 ? (
-                <>
-                  <ArrowRight className="h-4 w-4 mr-2" />
-                  Next Question
-                </>
-              ) : (
-                <>
-                  <Trophy className="h-4 w-4 mr-2" />
-                  Finish Demo
-                </>
-              )}
-            </Button>
+
+          {gameState === "question" && (
+            <>
+              <div className="flex items-center space-x-4">
+                <div className={`text-2xl font-bold ${
+                  timeLeft <= 10 ? 'text-red-400' : 
+                  timeLeft <= 20 ? 'text-yellow-400' : 'text-white'
+                }`}>
+                  Time: {timeLeft}s
+                </div>
+                <Button
+                  onClick={() => setIsTimerActive(!isTimerActive)}
+                  className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700 border"
+                >
+                  {isTimerActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </Button>
+              </div>
+              <Button
+                onClick={handleShowAnswer}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 text-lg"
+              >
+                Show Answer
+              </Button>
+              <Button
+                onClick={handleSkipForward}
+                className="bg-champagne-600 hover:bg-champagne-700 text-white px-6 py-3"
+              >
+                <SkipForward className="mr-2 h-4 w-4" />
+                Skip
+              </Button>
+            </>
           )}
 
-          {(gameState === "question" || gameState === "answer") && (
-            <Button 
-              onClick={handleRestart}
-              variant="outline"
-              className="border-white/40 text-white/80 hover:bg-white/10"
-            >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Restart
-            </Button>
+          {gameState === "answer" && (
+            <>
+              <Button
+                onClick={handleNextQuestion}
+                className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-semibold"
+                disabled={!questions || currentQuestionIndex >= questions.length - 1}
+              >
+                <ChevronRight className="mr-2 h-5 w-5" />
+                {questions && currentQuestionIndex >= questions.length - 1 ? "Finish Demo" : "Next Question"}
+              </Button>
+              <Button
+                onClick={() => setAutoAdvance(!autoAdvance)}
+                size="sm"
+                className="bg-champagne-700 hover:bg-champagne-600 text-white border border-champagne-500"
+              >
+                {autoAdvance ? "Auto: ON" : "Auto: OFF"}
+              </Button>
+            </>
           )}
+
+          {/* Always available controls */}
+          <div className="flex items-center space-x-2 ml-8">
+            <Button
+              onClick={handleRestart}
+              size="sm"
+              className="bg-red-700 hover:bg-red-600 text-white border border-red-500"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>

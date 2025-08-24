@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DashboardStats from "@/components/stats/dashboard-stats";
 import EventGenerator from "@/components/ai/event-generator";
 import QuestionGenerator from "@/components/ai/question-generator";
@@ -7,9 +7,28 @@ import RecentEvents from "@/components/events/recent-events";
 import UpcomingEvents from "@/components/events/upcoming-events";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Brain, QrCode, Copy, Calendar, Lightbulb, TrendingUp } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Brain, QrCode, Copy, Calendar, Lightbulb, TrendingUp, LogOut } from "lucide-react";
+import { useLocation } from "wouter";
+
+type User = {
+  id: string;
+  username: string;
+  email: string;
+  fullName: string;
+};
 
 export default function Dashboard() {
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  
+  // Check authentication
+  const { data: user, isLoading: userLoading, error: userError } = useQuery<{ user: User }>({
+    queryKey: ["/api/auth/me"],
+    retry: false
+  });
+  
   const { data: stats, isLoading: statsLoading } = useQuery<{
     totalEvents: number;
     totalParticipants: number;
@@ -18,18 +37,69 @@ export default function Dashboard() {
     insights?: string[];
   }>({
     queryKey: ["/api/dashboard/stats"],
+    enabled: !!user,
   });
+  
+  // Logout mutation
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error("Logout failed");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.clear();
+      toast({
+        title: "Logged out",
+        description: "You have been successfully logged out.",
+      });
+      setLocation("/");
+    }
+  });
+  
+  // Redirect to login if not authenticated
+  if (userError || (!userLoading && !user)) {
+    setLocation("/login");
+    return null;
+  }
+  
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-wine-50 to-champagne-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 wine-gradient rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Brain className="text-champagne-400 h-8 w-8 animate-pulse" />
+          </div>
+          <p className="text-wine-700">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Welcome Section */}
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2" data-testid="welcome-heading">
-          Welcome back, Mark!
-        </h2>
-        <p className="text-gray-600" data-testid="welcome-description">
-          Create unforgettable trivia experiences with AI-powered content generation
-        </p>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2" data-testid="welcome-heading">
+            Welcome back, {user?.user.fullName}!
+          </h2>
+          <p className="text-gray-600" data-testid="welcome-description">
+            Create unforgettable trivia experiences with AI-powered content generation
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          onClick={() => logoutMutation.mutate()}
+          className="text-gray-600 hover:text-gray-800 hover:bg-gray-100"
+          data-testid="button-logout"
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Logout
+        </Button>
       </div>
 
       {/* Quick Stats */}

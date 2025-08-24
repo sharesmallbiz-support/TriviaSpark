@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PlayCircle, Tv, Pause, CalendarPlus } from "lucide-react";
+import { PlayCircle, Tv, Pause, CalendarPlus, Settings, Presentation } from "lucide-react";
 import { Link } from "wouter";
 
 export default function ActiveEvents() {
@@ -53,24 +53,39 @@ export default function ActiveEvents() {
                 <p className="text-sm text-gray-600 mb-3" data-testid={`text-active-event-info-${index}`}>
                   {event.maxParticipants} max participants • {event.difficulty} difficulty
                 </p>
-                <div className="flex space-x-2">
-                  <Link href={`/event/${event.id}`}>
+                <div className="flex space-x-1">
+                  <Link href={`/events/${event.id}/manage`}>
                     <Button 
-                      className="flex-1 bg-emerald-600 text-white hover:bg-emerald-700 transition-colors text-sm"
-                      data-testid={`button-view-active-event-${index}`}
+                      size="sm"
+                      variant="outline"
+                      className="border-gray-300 hover:bg-gray-50 text-xs"
+                      data-testid={`button-manage-active-event-${index}`}
                     >
-                      <Tv className="mr-1 h-4 w-4" />
-                      View
+                      <Settings className="mr-1 h-3 w-3" />
+                      Manage
                     </Button>
                   </Link>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="border-gray-300 hover:bg-gray-50 transition-colors"
-                    data-testid={`button-pause-active-event-${index}`}
-                  >
-                    <Pause className="h-4 w-4" />
-                  </Button>
+                  <Link href={`/event/${event.id}`}>
+                    <Button 
+                      size="sm"
+                      className="bg-emerald-600 text-white hover:bg-emerald-700 text-xs"
+                      data-testid={`button-view-active-event-${index}`}
+                    >
+                      <Tv className="mr-1 h-3 w-3" />
+                      Event
+                    </Button>
+                  </Link>
+                  <Link href={`/presenter/${event.id}`}>
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 text-xs"
+                      data-testid={`button-presenter-active-event-${index}`}
+                    >
+                      <Presentation className="mr-1 h-3 w-3" />
+                      Present
+                    </Button>
+                  </Link>
                 </div>
               </div>
             ))

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WineIcon as Wine, Building, Cake, ChevronRight, Calendar } from "lucide-react";
+import { WineIcon as Wine, Building, Cake, ChevronRight, Calendar, Settings, Tv, Presentation } from "lucide-react";
 import { Link } from "wouter";
 
 const getEventIcon = (eventType: string) => {
@@ -99,11 +99,8 @@ export default function UpcomingEvents() {
               const iconColorClass = getEventColor(event.eventType);
               
               return (
-                <Link key={event.id} href={`/event/${event.id}`}>
-                  <div 
-                    className="flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer" 
-                    data-testid={`upcoming-event-${index}`}
-                  >
+                <div key={event.id} className="border rounded-lg p-3 hover:bg-gray-50 transition-colors" data-testid={`upcoming-event-${index}`}>
+                  <div className="flex items-center space-x-4 mb-3">
                     <div className={`w-10 h-10 ${iconColorClass} rounded-lg flex items-center justify-center`}>
                       <IconComponent className="h-5 w-5" />
                     </div>
@@ -115,9 +112,28 @@ export default function UpcomingEvents() {
                         {event.maxParticipants} max participants • {formatDate(event.eventDate)}
                       </p>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
                   </div>
-                </Link>
+                  <div className="flex space-x-1">
+                    <Link href={`/events/${event.id}/manage`}>
+                      <Button size="sm" variant="outline" className="text-xs">
+                        <Settings className="mr-1 h-3 w-3" />
+                        Manage
+                      </Button>
+                    </Link>
+                    <Link href={`/event/${event.id}`}>
+                      <Button size="sm" className="text-xs">
+                        <Tv className="mr-1 h-3 w-3" />
+                        Event
+                      </Button>
+                    </Link>
+                    <Link href={`/presenter/${event.id}`}>
+                      <Button size="sm" variant="outline" className="text-xs">
+                        <Presentation className="mr-1 h-3 w-3" />
+                        Present
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               );
             })
           ) : (

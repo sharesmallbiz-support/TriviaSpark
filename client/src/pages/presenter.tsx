@@ -188,10 +188,20 @@ export default function PresenterView() {
 
         {gameState === "question" && currentQuestion && (
           <div className="w-full max-w-7xl h-full flex flex-col" data-testid="view-question">
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white flex-1 flex flex-col">
-              <CardHeader>
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white flex-1 flex flex-col relative overflow-hidden">
+              {currentQuestion.backgroundImageUrl && (
+                <div 
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{
+                    backgroundImage: `url(${currentQuestion.backgroundImageUrl})`,
+                  }}
+                >
+                  <div className="absolute inset-0 bg-black/60"></div>
+                </div>
+              )}
+              <CardHeader className="relative z-10">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-3xl">
+                  <CardTitle className="text-xl lg:text-3xl text-white drop-shadow-lg">
                     Question {currentQuestionIndex + 1}
                   </CardTitle>
                   <div className="flex items-center space-x-4">
@@ -218,9 +228,9 @@ export default function PresenterView() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-8">
+              <CardContent className="flex-1 flex flex-col justify-center relative z-10">
                 <div className="text-center">
-                  <h3 className="text-2xl lg:text-4xl xl:text-5xl font-bold mb-4 lg:mb-8 leading-tight" data-testid="text-current-question">
+                  <h3 className="text-2xl lg:text-4xl xl:text-5xl font-bold mb-4 lg:mb-8 leading-tight text-white drop-shadow-lg" data-testid="text-current-question">
                     {currentQuestion.question}
                   </h3>
                   
@@ -231,8 +241,8 @@ export default function PresenterView() {
                           key={index}
                           className={`p-3 lg:p-6 rounded-lg border-2 ${
                             showAnswer && option === currentQuestion.correctAnswer
-                              ? 'bg-green-500/20 border-green-400 text-green-200'
-                              : 'bg-white/5 border-white/30 hover:bg-white/10'
+                              ? 'bg-green-500/30 border-green-400 text-green-100 shadow-lg'
+                              : 'bg-white/20 border-white/40 hover:bg-white/30 backdrop-blur-sm'
                           } transition-all duration-300`}
                           data-testid={`option-${index}`}
                         >
@@ -240,7 +250,7 @@ export default function PresenterView() {
                             <div className="w-8 h-8 rounded-full bg-champagne-200 text-champagne-900 font-bold flex items-center justify-center mr-4">
                               {String.fromCharCode(65 + index)}
                             </div>
-                            <span className="text-base lg:text-xl font-medium">{option}</span>
+                            <span className="text-base lg:text-xl font-medium text-white drop-shadow-md">{option}</span>
                           </div>
                         </div>
                       ))}

@@ -78,6 +78,7 @@ export const questions = pgTable("questions", {
   timeLimit: integer("time_limit").default(30), // seconds
   difficulty: text("difficulty").default("medium"),
   category: text("category"),
+  backgroundImageUrl: text("background_image_url"), // Unsplash or other background image
   aiGenerated: boolean("ai_generated").default(false),
   orderIndex: integer("order_index").default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),

@@ -269,18 +269,15 @@ export default function PresenterView() {
             {/* Answer Section at Top */}
             <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
               <CardContent className="py-6 lg:py-8 h-full flex flex-col justify-center">
-                <div className="text-center mb-4 lg:mb-6">
-                  <div className="w-16 h-16 lg:w-20 lg:h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4">
-                    <Star className="h-8 w-8 lg:h-10 lg:w-10 text-white" />
-                  </div>
-                  <h3 className="text-2xl lg:text-4xl xl:text-5xl font-bold text-green-300">Correct Answer!</h3>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 items-center">
-                  <div className="text-center lg:text-right">
-                    <h4 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-white/90">Correct Answer:</h4>
+                <div className="grid grid-cols-2 gap-4 lg:gap-8 items-center">
+                  <div className="text-center lg:text-right flex flex-col items-center lg:items-end">
+                    <div className="w-16 h-16 lg:w-20 lg:h-20 bg-green-500 rounded-full flex items-center justify-center mb-3 lg:mb-4">
+                      <Star className="h-8 w-8 lg:h-10 lg:w-10 text-white" />
+                    </div>
+                    <h3 className="text-xl lg:text-2xl xl:text-3xl font-bold text-green-300">Correct Answer</h3>
                   </div>
                   <div className="text-center lg:text-left">
-                    <p className="text-xl lg:text-3xl xl:text-4xl font-bold text-green-300" data-testid="text-correct-answer">
+                    <p className="text-xl lg:text-3xl xl:text-4xl font-bold text-white" data-testid="text-correct-answer">
                       {currentQuestion.correctAnswer}
                     </p>
                   </div>

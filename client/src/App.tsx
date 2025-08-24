@@ -15,6 +15,7 @@ import EventJoin from "@/pages/event-join";
 import Profile from "@/pages/profile";
 import ApiDocs from "@/pages/api-docs";
 import PresenterView from "@/pages/presenter";
+import PresenterDemo from "@/pages/presenter-demo";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
 
@@ -41,6 +42,7 @@ function Router() {
           <Route path="/profile" component={Profile} />
           <Route path="/api-docs" component={ApiDocs} />
           <Route path="/presenter/:id" component={PresenterView} />
+          <Route path="/presenter-demo/:id" component={PresenterDemo} />
           <Route component={NotFound} />
         </Switch>
       </main>

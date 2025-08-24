@@ -29,21 +29,27 @@ export default function PresenterDemo() {
   const [autoAdvance, setAutoAdvance] = useState(true);
 
   // Fetch event data
-  const { data: event } = useQuery<any>({
+  const { data: event, isLoading: eventLoading, error: eventError } = useQuery<any>({
     queryKey: ['/api/events', eventId],
     enabled: !!eventId,
+    retry: 3,
+    retryDelay: 1000,
   });
 
   // Fetch questions
-  const { data: questions } = useQuery<any[]>({
+  const { data: questions, isLoading: questionsLoading, error: questionsError } = useQuery<any[]>({
     queryKey: ['/api/events', eventId, 'questions'],
     enabled: !!eventId,
+    retry: 3,
+    retryDelay: 1000,
   });
 
   // Fetch fun facts
-  const { data: funFacts } = useQuery<any[]>({
+  const { data: funFacts, isLoading: funFactsLoading, error: funFactsError } = useQuery<any[]>({
     queryKey: ['/api/events', eventId, 'fun-facts'],
     enabled: !!eventId,
+    retry: 3,
+    retryDelay: 1000,
   });
 
   const currentQuestion = questions?.[currentQuestionIndex];
@@ -117,12 +123,48 @@ export default function PresenterDemo() {
     }
   };
 
-  if (!event) {
+  // Check for authentication errors
+  const isAuthError = (error: any) => {
+    return error?.message?.includes('401') || error?.message?.includes('Not authenticated');
+  };
+
+  const hasAuthError = isAuthError(eventError) || isAuthError(questionsError) || isAuthError(funFactsError);
+
+  // Show authentication error
+  if (hasAuthError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-wine-900 to-champagne-900 flex items-center justify-center">
+        <div className="text-white text-center max-w-md">
+          <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Star className="h-8 w-8 text-white" />
+          </div>
+          <h1 className="text-4xl font-bold mb-4">Authentication Required</h1>
+          <p className="text-xl mb-6">Please log in to access the demo presenter.</p>
+          <Button 
+            onClick={() => window.location.href = '/login'}
+            size="lg"
+            className="bg-champagne-500 hover:bg-champagne-400 text-champagne-900 font-bold"
+          >
+            Go to Login
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while any critical data is loading
+  if (eventLoading || questionsLoading || funFactsLoading || !event || !questions) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-wine-900 to-champagne-900 flex items-center justify-center">
         <div className="text-white text-center">
+          <div className="w-16 h-16 bg-champagne-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-spin">
+            <Play className="h-8 w-8 text-champagne-900" />
+          </div>
           <h1 className="text-4xl font-bold mb-4">Demo Presenter</h1>
           <p className="text-xl">Loading trivia preview...</p>
+          {eventError && !isAuthError(eventError) && <p className="text-red-400 mt-2">Error loading event data</p>}
+          {questionsError && !isAuthError(questionsError) && <p className="text-red-400 mt-2">Error loading questions</p>}
+          {funFactsError && !isAuthError(funFactsError) && <p className="text-red-400 mt-2">Error loading fun facts</p>}
         </div>
       </div>
     );

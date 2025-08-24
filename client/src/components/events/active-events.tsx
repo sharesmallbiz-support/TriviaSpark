@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PlayCircle, Tv, Pause, CalendarPlus, Settings, Presentation } from "lucide-react";
+import { PlayCircle, Tv, Pause, CalendarPlus, Settings, Presentation, Monitor } from "lucide-react";
 import { Link } from "wouter";
 
 export default function ActiveEvents() {
@@ -84,6 +84,17 @@ export default function ActiveEvents() {
                     >
                       <Presentation className="mr-1 h-3 w-3" />
                       Present
+                    </Button>
+                  </Link>
+                  <Link href={`/presenter-demo/${event.id}`}>
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      className="bg-champagne-50 border-champagne-300 text-champagne-700 hover:bg-champagne-100 text-xs"
+                      data-testid={`button-demo-active-event-${index}`}
+                    >
+                      <Monitor className="mr-1 h-3 w-3" />
+                      Demo
                     </Button>
                   </Link>
                 </div>

@@ -267,19 +267,30 @@ export default function PresenterView() {
         {gameState === "answer" && currentQuestion && (
           <div className="w-full max-w-7xl h-full flex flex-col space-y-4 lg:space-y-8" data-testid="view-answer">
             {/* Answer Section at Top */}
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white flex-1">
-              <CardContent className="text-center py-6 lg:py-12 h-full flex flex-col justify-center">
-                <div className="w-16 h-16 lg:w-20 lg:h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4">
-                  <Star className="h-8 w-8 lg:h-10 lg:w-10 text-white" />
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
+              <CardContent className="py-6 lg:py-8 h-full flex flex-col justify-center">
+                <div className="text-center mb-4 lg:mb-6">
+                  <div className="w-16 h-16 lg:w-20 lg:h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4">
+                    <Star className="h-8 w-8 lg:h-10 lg:w-10 text-white" />
+                  </div>
+                  <h3 className="text-2xl lg:text-4xl xl:text-5xl font-bold text-green-300">Correct Answer!</h3>
                 </div>
-                <h3 className="text-2xl lg:text-4xl xl:text-5xl font-bold mb-3 lg:mb-6 text-green-300">Correct Answer!</h3>
-                <p className="text-xl lg:text-3xl xl:text-4xl mb-2 lg:mb-4" data-testid="text-correct-answer">
-                  {currentQuestion.correctAnswer}
-                </p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 items-center">
+                  <div className="text-center lg:text-right">
+                    <h4 className="text-xl lg:text-2xl xl:text-3xl font-semibold text-white/90">Correct Answer:</h4>
+                  </div>
+                  <div className="text-center lg:text-left">
+                    <p className="text-xl lg:text-3xl xl:text-4xl font-bold text-green-300" data-testid="text-correct-answer">
+                      {currentQuestion.correctAnswer}
+                    </p>
+                  </div>
+                </div>
                 {currentQuestion.explanation && (
-                  <p className="text-sm lg:text-lg text-white/80 max-w-4xl mx-auto leading-relaxed">
-                    {currentQuestion.explanation}
-                  </p>
+                  <div className="mt-4 lg:mt-6 text-center">
+                    <p className="text-sm lg:text-lg text-white/80 max-w-4xl mx-auto leading-relaxed">
+                      {currentQuestion.explanation}
+                    </p>
+                  </div>
                 )}
               </CardContent>
             </Card>

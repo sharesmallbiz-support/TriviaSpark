@@ -134,36 +134,36 @@ export default function PresenterView() {
     <div className="h-screen flex flex-col bg-gradient-to-br from-wine-900 to-champagne-900 text-white overflow-hidden">
       {/* Header - Fixed height */}
       <div className="flex-shrink-0 p-4 lg:p-6 border-b border-white/20">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl lg:text-4xl xl:text-5xl font-bold text-champagne-200 truncate" data-testid="text-event-title">
+        <div className="flex items-start justify-between flex-wrap gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl sm:text-2xl lg:text-4xl xl:text-5xl font-bold text-champagne-200 truncate" data-testid="text-event-title">
               {event.title}
             </h1>
-            <p className="text-sm lg:text-xl text-white/80 truncate" data-testid="text-event-description">
+            <p className="text-xs sm:text-sm lg:text-xl text-white/80 truncate" data-testid="text-event-description">
               {event.description}
             </p>
           </div>
-          <div className="flex items-center space-x-6 text-right">
-            <div>
-              <div className="text-2xl font-bold text-champagne-300">{participants?.length || 0}</div>
-              <div className="text-sm text-white/60">Participants</div>
+          <div className="flex items-center space-x-2 sm:space-x-4 lg:space-x-6 text-right flex-shrink-0">
+            <div className="text-center">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-champagne-300">{participants?.length || 0}</div>
+              <div className="text-xs sm:text-sm text-white/60">Participants</div>
             </div>
-            <div>
-              <div className="text-2xl font-bold text-champagne-300">{teams?.length || 0}</div>
-              <div className="text-sm text-white/60">Teams</div>
+            <div className="text-center">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-champagne-300">{teams?.length || 0}</div>
+              <div className="text-xs sm:text-sm text-white/60">Teams</div>
             </div>
-            <div>
-              <div className="text-2xl font-bold text-champagne-300">{questions?.length || 0}</div>
-              <div className="text-sm text-white/60">Questions</div>
+            <div className="text-center">
+              <div className="text-lg sm:text-xl lg:text-2xl font-bold text-champagne-300">{questions?.length || 0}</div>
+              <div className="text-xs sm:text-sm text-white/60">Questions</div>
             </div>
           </div>
         </div>
         
         {/* Progress Bar */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-white/60">Progress</span>
-            <span className="text-sm text-champagne-300">
+        <div className="mt-3 lg:mt-4">
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+            <span className="text-xs sm:text-sm text-white/60">Progress</span>
+            <span className="text-xs sm:text-sm text-champagne-300">
               Question {currentQuestionIndex + 1} of {questions?.length || 0}
             </span>
           </div>

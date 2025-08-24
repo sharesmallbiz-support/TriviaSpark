@@ -29,25 +29,25 @@ export default function PresenterDemo() {
   const [autoAdvance, setAutoAdvance] = useState(true);
 
   // Fetch event data
-  const { data: event } = useQuery({
+  const { data: event } = useQuery<any>({
     queryKey: ['/api/events', eventId],
     enabled: !!eventId,
   });
 
   // Fetch questions
-  const { data: questions } = useQuery({
+  const { data: questions } = useQuery<any[]>({
     queryKey: ['/api/events', eventId, 'questions'],
     enabled: !!eventId,
   });
 
   // Fetch fun facts
-  const { data: funFacts } = useQuery({
+  const { data: funFacts } = useQuery<any[]>({
     queryKey: ['/api/events', eventId, 'fun-facts'],
     enabled: !!eventId,
   });
 
   const currentQuestion = questions?.[currentQuestionIndex];
-  const progress = questions?.length ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
+  const progress = questions ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
   const timerProgress = (timeLeft / 30) * 100;
 
   // Timer logic
@@ -85,7 +85,7 @@ export default function PresenterDemo() {
   };
 
   const handleNextQuestion = () => {
-    if (questions?.length && currentQuestionIndex < questions.length - 1) {
+    if (questions && currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
       setShowAnswer(false);
       setGameState("question");
@@ -245,9 +245,9 @@ export default function PresenterDemo() {
                     </h3>
                   </div>
                   
-                  {currentQuestion.options && Array.isArray(currentQuestion.options) && (
+                  {currentQuestion.options && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-6 max-w-6xl mx-auto">
-                      {(currentQuestion.options as string[]).map((option: string, index: number) => (
+                      {currentQuestion.options.map((option: string, index: number) => (
                         <div
                           key={index}
                           className={`p-3 lg:p-6 rounded-lg border-2 ${
@@ -294,16 +294,15 @@ export default function PresenterDemo() {
             </Card>
 
             {/* Fun Fact Section at Bottom */}
-            {funFacts && Array.isArray(funFacts) && funFacts.length > 0 && (
+            {funFacts && funFacts.length > 0 && (
               <Card className="bg-champagne-600/20 backdrop-blur-sm border-champagne-400/30 text-white flex-1">
                 <CardContent className="text-center py-4 lg:py-8 h-full flex flex-col justify-center">
                   <div className="w-12 h-12 lg:w-16 lg:h-16 bg-champagne-500 rounded-full flex items-center justify-center mx-auto mb-2 lg:mb-4">
                     <Star className="h-6 w-6 lg:h-8 lg:w-8 text-champagne-900" />
                   </div>
                   <h4 className="text-lg lg:text-2xl font-bold mb-2 lg:mb-4 text-champagne-200">Fun Fact!</h4>
-                  {(() => {
-                    const funFactArray = funFacts as any[];
-                    const funFact = funFactArray[currentQuestionIndex % funFactArray.length];
+                  {funFacts && funFacts.length > 0 && (() => {
+                    const funFact = funFacts[currentQuestionIndex % funFacts.length];
                     return funFact ? (
                       <div>
                         <h5 className="text-base lg:text-xl font-semibold mb-2 lg:mb-3 text-champagne-100">{funFact.title}</h5>

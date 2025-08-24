@@ -986,6 +986,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get fun facts for an event
+  app.get("/api/events/:id/fun-facts", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const eventId = req.params.id;
+      const event = await storage.getEvent(eventId);
+
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      // Check if user owns this event
+      if (event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const funFacts = await storage.getFunFactsByEvent(eventId);
+      res.json(funFacts);
+    } catch (error) {
+      console.error("Error fetching fun facts:", error);
+      res.status(500).json({ error: "Failed to fetch fun facts" });
+    }
+  });
+
   // Update a question
   app.put("/api/questions/:id", async (req, res) => {
     try {

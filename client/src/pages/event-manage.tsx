@@ -105,6 +105,16 @@ type Question = {
   aiGenerated?: boolean;
 };
 
+type FunFact = {
+  id: string;
+  eventId: string;
+  title: string;
+  content: string;
+  orderIndex: number;
+  isActive: boolean;
+  createdAt: Date;
+};
+
 type EventFormData = {
   title: string;
   description: string;
@@ -198,6 +208,13 @@ function EventManage() {
   // Get questions for this event
   const { data: questions = [], isLoading: questionsLoading } = useQuery<Question[]>({
     queryKey: ["/api/events", eventId, "questions"],
+    enabled: !!eventId,
+    retry: false
+  });
+
+  // Get fun facts for this event
+  const { data: funFacts = [], isLoading: funFactsLoading } = useQuery<FunFact[]>({
+    queryKey: ["/api/events", eventId, "fun-facts"],
     enabled: !!eventId,
     retry: false
   });
@@ -1430,37 +1447,25 @@ function EventManage() {
                     Add fun facts about your organization that will be shown between questions during the trivia event.
                   </p>
                   
-                  {editingFunFacts ? (
-                    <div className="space-y-4">
-                      <Textarea
-                        value={funFactsText}
-                        onChange={(e) => setFunFactsText(e.target.value)}
-                        placeholder="Enter fun facts, one per line..."
-                        className="min-h-32"
-                        data-testid="textarea-fun-facts"
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          onClick={handleSaveFunFacts}
-                          className="trivia-button-primary"
-                          data-testid="button-save-fun-facts"
-                        >
-                          <Save className="mr-2 h-4 w-4" />
-                          Save Fun Facts
-                        </Button>
-                        <Button
-                          onClick={() => setEditingFunFacts(false)}
-                          variant="outline"
-                          data-testid="button-cancel-fun-facts"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
+                  {funFactsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-wine-600"></div>
                     </div>
                   ) : (
                     <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-medium mb-2">Current Fun Facts:</h4>
-                      {funFactsText || 'No fun facts added yet. Click Edit to add some!'}
+                      <h4 className="font-medium mb-2">Current Fun Facts ({funFacts.length}):</h4>
+                      {funFacts.length > 0 ? (
+                        <div className="space-y-3">
+                          {funFacts.map((fact, index) => (
+                            <div key={fact.id} className="border-l-4 border-wine-600 pl-3">
+                              <h5 className="font-medium text-wine-700">{index + 1}. {fact.title}</h5>
+                              <p className="text-gray-700 mt-1">{fact.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500">No fun facts available for this event yet.</p>
+                      )}
                     </div>
                   )}
                 </div>

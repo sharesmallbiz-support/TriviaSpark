@@ -231,7 +231,13 @@ export default function PresenterView() {
               <CardContent className="flex-1 flex flex-col justify-center relative z-10">
                 <div className="text-center">
                   <div className="bg-black/80 backdrop-blur-sm rounded-xl p-4 lg:p-6 mb-4 lg:mb-8 border border-white/20">
-                    <h3 className="text-2xl lg:text-4xl xl:text-5xl font-bold leading-tight text-white" data-testid="text-current-question">
+                    <h3 className={`font-bold leading-tight text-white ${
+                      currentQuestion.question.length > 120 
+                        ? 'text-lg lg:text-2xl xl:text-3xl' 
+                        : currentQuestion.question.length > 80 
+                        ? 'text-xl lg:text-3xl xl:text-4xl'
+                        : 'text-2xl lg:text-4xl xl:text-5xl'
+                    }`} data-testid="text-current-question">
                       {currentQuestion.question}
                     </h3>
                   </div>

@@ -196,7 +196,7 @@ export default function PresenterView() {
                     backgroundImage: `url(${currentQuestion.backgroundImageUrl})`,
                   }}
                 >
-                  <div className="absolute inset-0 bg-black/60"></div>
+                  <div className="absolute inset-0 bg-black/75"></div>
                 </div>
               )}
               <CardHeader className="relative z-10">
@@ -230,9 +230,11 @@ export default function PresenterView() {
               </CardHeader>
               <CardContent className="flex-1 flex flex-col justify-center relative z-10">
                 <div className="text-center">
-                  <h3 className="text-2xl lg:text-4xl xl:text-5xl font-bold mb-4 lg:mb-8 leading-tight text-white drop-shadow-lg" data-testid="text-current-question">
-                    {currentQuestion.question}
-                  </h3>
+                  <div className="bg-black/80 backdrop-blur-sm rounded-xl p-4 lg:p-6 mb-4 lg:mb-8 border border-white/20">
+                    <h3 className="text-2xl lg:text-4xl xl:text-5xl font-bold leading-tight text-white" data-testid="text-current-question">
+                      {currentQuestion.question}
+                    </h3>
+                  </div>
                   
                   {currentQuestion.options && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-6 max-w-6xl mx-auto">
@@ -241,8 +243,8 @@ export default function PresenterView() {
                           key={index}
                           className={`p-3 lg:p-6 rounded-lg border-2 ${
                             showAnswer && option === currentQuestion.correctAnswer
-                              ? 'bg-green-500/30 border-green-400 text-green-100 shadow-lg'
-                              : 'bg-white/20 border-white/40 hover:bg-white/30 backdrop-blur-sm'
+                              ? 'bg-green-600 border-green-400 text-white shadow-lg'
+                              : 'bg-gray-800 border-gray-600 hover:bg-gray-700 text-white'
                           } transition-all duration-300`}
                           data-testid={`option-${index}`}
                         >
@@ -250,7 +252,7 @@ export default function PresenterView() {
                             <div className="w-8 h-8 rounded-full bg-champagne-200 text-champagne-900 font-bold flex items-center justify-center mr-4">
                               {String.fromCharCode(65 + index)}
                             </div>
-                            <span className="text-base lg:text-xl font-medium text-white drop-shadow-md">{option}</span>
+                            <span className="text-base lg:text-xl font-medium text-white">{option}</span>
                           </div>
                         </div>
                       ))}

@@ -131,15 +131,15 @@ export default function PresenterView() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-wine-900 to-champagne-900 text-white">
-      {/* Header */}
-      <div className="p-6 border-b border-white/20">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-wine-900 to-champagne-900 text-white overflow-hidden">
+      {/* Header - Fixed height */}
+      <div className="flex-shrink-0 p-4 lg:p-6 border-b border-white/20">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-champagne-200" data-testid="text-event-title">
+            <h1 className="text-2xl lg:text-4xl xl:text-5xl font-bold text-champagne-200 truncate" data-testid="text-event-title">
               {event.title}
             </h1>
-            <p className="text-xl text-white/80" data-testid="text-event-description">
+            <p className="text-sm lg:text-xl text-white/80 truncate" data-testid="text-event-description">
               {event.description}
             </p>
           </div>
@@ -171,24 +171,24 @@ export default function PresenterView() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 p-6">
+      {/* Main Content - Flexible height */}
+      <div className="flex-1 flex items-center justify-center p-4 lg:p-6 pb-20 lg:pb-24 overflow-hidden">
         {gameState === "waiting" && (
-          <div className="text-center py-20" data-testid="view-waiting">
-            <div className="w-32 h-32 wine-gradient rounded-full flex items-center justify-center mx-auto mb-8">
-              <Trophy className="h-16 w-16 text-white" />
+          <div className="text-center w-full max-w-4xl" data-testid="view-waiting">
+            <div className="w-20 h-20 lg:w-32 lg:h-32 wine-gradient rounded-full flex items-center justify-center mx-auto mb-6 lg:mb-8">
+              <Trophy className="h-10 w-10 lg:h-16 lg:w-16 text-white" />
             </div>
-            <h2 className="text-6xl font-bold mb-4 text-champagne-200">Welcome to Trivia!</h2>
-            <p className="text-2xl text-white/80 mb-8">Get ready for an amazing experience</p>
-            <div className="text-lg text-champagne-300">
+            <h2 className="text-4xl lg:text-6xl xl:text-7xl font-bold mb-3 lg:mb-4 text-champagne-200">Welcome to Trivia!</h2>
+            <p className="text-lg lg:text-2xl xl:text-3xl text-white/80 mb-6 lg:mb-8">Get ready for an amazing experience</p>
+            <div className="text-base lg:text-lg text-champagne-300">
               {participants?.length || 0} participants ready to play
             </div>
           </div>
         )}
 
         {gameState === "question" && currentQuestion && (
-          <div className="max-w-6xl mx-auto" data-testid="view-question">
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
+          <div className="w-full max-w-7xl h-full flex flex-col" data-testid="view-question">
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white flex-1 flex flex-col">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-3xl">
@@ -220,16 +220,16 @@ export default function PresenterView() {
               </CardHeader>
               <CardContent className="space-y-8">
                 <div className="text-center">
-                  <h3 className="text-4xl font-bold mb-8 leading-tight" data-testid="text-current-question">
+                  <h3 className="text-2xl lg:text-4xl xl:text-5xl font-bold mb-4 lg:mb-8 leading-tight" data-testid="text-current-question">
                     {currentQuestion.question}
                   </h3>
                   
                   {currentQuestion.options && (
-                    <div className="grid grid-cols-2 gap-6 max-w-4xl mx-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-6 max-w-6xl mx-auto">
                       {currentQuestion.options.map((option: string, index: number) => (
                         <div
                           key={index}
-                          className={`p-6 rounded-lg border-2 ${
+                          className={`p-3 lg:p-6 rounded-lg border-2 ${
                             showAnswer && option === currentQuestion.correctAnswer
                               ? 'bg-green-500/20 border-green-400 text-green-200'
                               : 'bg-white/5 border-white/30 hover:bg-white/10'
@@ -240,7 +240,7 @@ export default function PresenterView() {
                             <div className="w-8 h-8 rounded-full bg-champagne-200 text-champagne-900 font-bold flex items-center justify-center mr-4">
                               {String.fromCharCode(65 + index)}
                             </div>
-                            <span className="text-xl font-medium">{option}</span>
+                            <span className="text-base lg:text-xl font-medium">{option}</span>
                           </div>
                         </div>
                       ))}
@@ -253,19 +253,19 @@ export default function PresenterView() {
         )}
 
         {gameState === "answer" && currentQuestion && (
-          <div className="max-w-6xl mx-auto" data-testid="view-answer">
+          <div className="w-full max-w-7xl h-full flex flex-col space-y-4 lg:space-y-8" data-testid="view-answer">
             {/* Answer Section at Top */}
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white mb-8">
-              <CardContent className="text-center py-12">
-                <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Star className="h-10 w-10 text-white" />
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white flex-1">
+              <CardContent className="text-center py-6 lg:py-12 h-full flex flex-col justify-center">
+                <div className="w-16 h-16 lg:w-20 lg:h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4">
+                  <Star className="h-8 w-8 lg:h-10 lg:w-10 text-white" />
                 </div>
-                <h3 className="text-4xl font-bold mb-6 text-green-300">Correct Answer!</h3>
-                <p className="text-3xl mb-4" data-testid="text-correct-answer">
+                <h3 className="text-2xl lg:text-4xl xl:text-5xl font-bold mb-3 lg:mb-6 text-green-300">Correct Answer!</h3>
+                <p className="text-xl lg:text-3xl xl:text-4xl mb-2 lg:mb-4" data-testid="text-correct-answer">
                   {currentQuestion.correctAnswer}
                 </p>
                 {currentQuestion.explanation && (
-                  <p className="text-lg text-white/80 max-w-3xl mx-auto leading-relaxed">
+                  <p className="text-sm lg:text-lg text-white/80 max-w-4xl mx-auto leading-relaxed">
                     {currentQuestion.explanation}
                   </p>
                 )}
@@ -274,19 +274,19 @@ export default function PresenterView() {
 
             {/* Fun Fact Section at Bottom */}
             {funFacts && funFacts.length > 0 && (
-              <Card className="bg-champagne-600/20 backdrop-blur-sm border-champagne-400/30 text-white">
-                <CardContent className="text-center py-8">
-                  <div className="w-16 h-16 bg-champagne-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Star className="h-8 w-8 text-champagne-900" />
+              <Card className="bg-champagne-600/20 backdrop-blur-sm border-champagne-400/30 text-white flex-1">
+                <CardContent className="text-center py-4 lg:py-8 h-full flex flex-col justify-center">
+                  <div className="w-12 h-12 lg:w-16 lg:h-16 bg-champagne-500 rounded-full flex items-center justify-center mx-auto mb-2 lg:mb-4">
+                    <Star className="h-6 w-6 lg:h-8 lg:w-8 text-champagne-900" />
                   </div>
-                  <h4 className="text-2xl font-bold mb-4 text-champagne-200">Fun Fact!</h4>
+                  <h4 className="text-lg lg:text-2xl font-bold mb-2 lg:mb-4 text-champagne-200">Fun Fact!</h4>
                   {(() => {
                     // Cycle through fun facts based on current question index
                     const funFact = funFacts[currentQuestionIndex % funFacts.length];
                     return (
                       <div>
-                        <h5 className="text-xl font-semibold mb-3 text-champagne-100">{funFact.title}</h5>
-                        <p className="text-lg text-white/90 max-w-4xl mx-auto leading-relaxed">
+                        <h5 className="text-base lg:text-xl font-semibold mb-2 lg:mb-3 text-champagne-100">{funFact.title}</h5>
+                        <p className="text-sm lg:text-lg text-white/90 max-w-5xl mx-auto leading-relaxed">
                           {funFact.content}
                         </p>
                       </div>
@@ -299,20 +299,20 @@ export default function PresenterView() {
         )}
 
         {gameState === "leaderboard" && (
-          <div className="max-w-4xl mx-auto" data-testid="view-leaderboard">
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
-              <CardHeader>
-                <CardTitle className="text-4xl text-center flex items-center justify-center">
-                  <Trophy className="mr-4 h-10 w-10 text-yellow-400" />
+          <div className="w-full max-w-5xl h-full flex flex-col" data-testid="view-leaderboard">
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white flex-1 flex flex-col">
+              <CardHeader className="flex-shrink-0">
+                <CardTitle className="text-2xl lg:text-4xl text-center flex items-center justify-center">
+                  <Trophy className="mr-2 lg:mr-4 h-6 w-6 lg:h-10 lg:w-10 text-yellow-400" />
                   Leaderboard
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="flex-1 flex flex-col justify-center">
+                <div className="space-y-3 lg:space-y-4">
                   {leaderboard.map((entry, index) => (
                     <div
                       key={entry.name}
-                      className={`flex items-center justify-between p-6 rounded-lg ${
+                      className={`flex items-center justify-between p-4 lg:p-6 rounded-lg ${
                         index === 0 ? 'bg-yellow-500/20 border-2 border-yellow-400' :
                         index === 1 ? 'bg-gray-300/20 border-2 border-gray-400' :
                         index === 2 ? 'bg-amber-600/20 border-2 border-amber-600' :
@@ -321,7 +321,7 @@ export default function PresenterView() {
                       data-testid={`leaderboard-entry-${index}`}
                     >
                       <div className="flex items-center">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl mr-4 ${
+                        <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center font-bold text-lg lg:text-xl mr-3 lg:mr-4 ${
                           index === 0 ? 'bg-yellow-400 text-yellow-900' :
                           index === 1 ? 'bg-gray-400 text-gray-900' :
                           index === 2 ? 'bg-amber-600 text-amber-100' :
@@ -329,9 +329,9 @@ export default function PresenterView() {
                         }`}>
                           {entry.rank}
                         </div>
-                        <span className="text-2xl font-semibold">{entry.name}</span>
+                        <span className="text-lg lg:text-2xl font-semibold">{entry.name}</span>
                       </div>
-                      <span className="text-3xl font-bold text-champagne-300">
+                      <span className="text-xl lg:text-3xl font-bold text-champagne-300">
                         {entry.score}
                       </span>
                     </div>
@@ -343,14 +343,14 @@ export default function PresenterView() {
         )}
       </div>
 
-      {/* Control Panel */}
-      <div className="fixed bottom-0 left-0 right-0 bg-black/90 backdrop-blur-sm border-t border-white/20 p-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-center space-x-4">
+      {/* Control Panel - Fixed bottom */}
+      <div className="absolute bottom-0 left-0 right-0 bg-black/90 backdrop-blur-sm border-t border-white/20 p-2 lg:p-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-center space-x-2 lg:space-x-4">
           {gameState === "waiting" && (
             <>
               <Button
                 onClick={handleStartGame}
-                className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg font-semibold"
+                className="bg-green-600 hover:bg-green-700 text-white px-4 lg:px-8 py-2 lg:py-4 text-base lg:text-lg font-semibold"
                 data-testid="button-start-game"
               >
                 <Play className="mr-2 h-5 w-5" />

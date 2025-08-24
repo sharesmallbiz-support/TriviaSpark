@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { WineIcon as Wine, Building, Cake, ChevronRight, Settings, Tv, Presentation } from "lucide-react";
 import { Link } from "wouter";
 

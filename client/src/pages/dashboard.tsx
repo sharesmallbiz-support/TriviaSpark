@@ -66,6 +66,10 @@ export default function Dashboard() {
     return null;
   }
   
+  if (!user) {
+    return null;
+  }
+  
   if (userLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-wine-50 to-champagne-50 flex items-center justify-center">

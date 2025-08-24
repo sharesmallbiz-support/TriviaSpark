@@ -45,6 +45,11 @@ export default function PresenterView() {
     enabled: !!eventId,
   });
 
+  const { data: funFacts } = useQuery<any[]>({
+    queryKey: ["/api/events", eventId, "fun-facts"],
+    enabled: !!eventId,
+  });
+
   const currentQuestion = questions?.[currentQuestionIndex];
   const progress = questions ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
   const timerProgress = (timeLeft / 30) * 100;
@@ -249,22 +254,47 @@ export default function PresenterView() {
 
         {gameState === "answer" && currentQuestion && (
           <div className="max-w-6xl mx-auto" data-testid="view-answer">
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white">
-              <CardContent className="text-center py-16">
-                <div className="w-24 h-24 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Star className="h-12 w-12 text-white" />
+            {/* Answer Section at Top */}
+            <Card className="bg-white/10 backdrop-blur-sm border-white/20 text-white mb-8">
+              <CardContent className="text-center py-12">
+                <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Star className="h-10 w-10 text-white" />
                 </div>
-                <h3 className="text-5xl font-bold mb-8 text-green-300">Correct Answer!</h3>
-                <p className="text-3xl mb-8" data-testid="text-correct-answer">
+                <h3 className="text-4xl font-bold mb-6 text-green-300">Correct Answer!</h3>
+                <p className="text-3xl mb-4" data-testid="text-correct-answer">
                   {currentQuestion.correctAnswer}
                 </p>
                 {currentQuestion.explanation && (
-                  <p className="text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
+                  <p className="text-lg text-white/80 max-w-3xl mx-auto leading-relaxed">
                     {currentQuestion.explanation}
                   </p>
                 )}
               </CardContent>
             </Card>
+
+            {/* Fun Fact Section at Bottom */}
+            {funFacts && funFacts.length > 0 && (
+              <Card className="bg-champagne-600/20 backdrop-blur-sm border-champagne-400/30 text-white">
+                <CardContent className="text-center py-8">
+                  <div className="w-16 h-16 bg-champagne-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Star className="h-8 w-8 text-champagne-900" />
+                  </div>
+                  <h4 className="text-2xl font-bold mb-4 text-champagne-200">Fun Fact!</h4>
+                  {(() => {
+                    // Cycle through fun facts based on current question index
+                    const funFact = funFacts[currentQuestionIndex % funFacts.length];
+                    return (
+                      <div>
+                        <h5 className="text-xl font-semibold mb-3 text-champagne-100">{funFact.title}</h5>
+                        <p className="text-lg text-white/90 max-w-4xl mx-auto leading-relaxed">
+                          {funFact.content}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 

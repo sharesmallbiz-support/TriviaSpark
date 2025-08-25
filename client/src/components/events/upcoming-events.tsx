@@ -51,6 +51,25 @@ export default function UpcomingEvents() {
 
   // Filter events that are in the future (upcoming events)
   const now = new Date();
+  
+  // Debug logging
+  if (events) {
+    console.log("=== UPCOMING EVENTS DEBUG ===");
+    console.log("Current time:", now.toISOString());
+    console.log("Raw events data:", events);
+    console.log("Events count:", events.length);
+    
+    events.forEach((event, index) => {
+      console.log(`Event ${index}:`, {
+        title: event.title,
+        eventDate: event.eventDate,
+        eventDateType: typeof event.eventDate,
+        parsedDate: event.eventDate ? new Date(event.eventDate) : null,
+        isFuture: event.eventDate ? new Date(event.eventDate) >= now : false
+      });
+    });
+  }
+  
   const upcomingEvents = events?.filter(event => {
     if (!event.eventDate) return false;
     const eventDate = new Date(event.eventDate);
@@ -60,6 +79,8 @@ export default function UpcomingEvents() {
     const dateB = new Date(b.eventDate);
     return dateA.getTime() - dateB.getTime(); // Soonest first
   }).slice(0, 3) || [];
+  
+  console.log("Filtered upcoming events:", upcomingEvents);
 
   if (isLoading) {
     return (

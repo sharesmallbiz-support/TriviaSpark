@@ -1,50 +1,60 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, json, boolean } from "drizzle-orm/pg-core";
+import {
+  sqliteTable,
+  text,
+  integer,
+  blob,
+  real,
+} from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const users = sqliteTable("users", {
+  id: text("id").primaryKey(),
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   fullName: text("full_name").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .$defaultFn(() => new Date())
+    .notNull(),
 });
 
-export const events = pgTable("events", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const events = sqliteTable("events", {
+  id: text("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description"),
-  hostId: varchar("host_id").notNull().references(() => users.id),
+  hostId: text("host_id")
+    .notNull()
+    .references(() => users.id),
   eventType: text("event_type").notNull(), // wine_dinner, corporate, party, educational, fundraiser
   maxParticipants: integer("max_participants").default(50),
   difficulty: text("difficulty").default("mixed"), // easy, medium, hard, mixed
   status: text("status").default("draft"), // draft, active, completed, cancelled
   qrCode: text("qr_code"),
-  eventDate: timestamp("event_date"),
+  eventDate: integer("event_date", { mode: "timestamp" }),
   eventTime: text("event_time"),
   location: text("location"),
   sponsoringOrganization: text("sponsoring_organization"),
-  
+
   // Rich content and branding
   logoUrl: text("logo_url"),
   backgroundImageUrl: text("background_image_url"),
   eventCopy: text("event_copy"), // AI-generated promotional description
   welcomeMessage: text("welcome_message"), // Custom welcome message for participants
   thankYouMessage: text("thank_you_message"), // Message shown after event completion
-  
+
   // Theme and styling
   primaryColor: text("primary_color").default("#7C2D12"), // wine color
   secondaryColor: text("secondary_color").default("#FEF3C7"), // champagne color
   fontFamily: text("font_family").default("Inter"),
-  
+
   // Contact and social
   contactEmail: text("contact_email"),
   contactPhone: text("contact_phone"),
   websiteUrl: text("website_url"),
   socialLinks: text("social_links"), // JSON string of social media links
-  
+
   // Event details
   prizeInformation: text("prize_information"),
   eventRules: text("event_rules"),
@@ -54,117 +64,134 @@ export const events = pgTable("events", {
   dressCode: text("dress_code"),
   ageRestrictions: text("age_restrictions"),
   technicalRequirements: text("technical_requirements"),
-  
+
   // Business information
-  registrationDeadline: timestamp("registration_deadline"),
+  registrationDeadline: integer("registration_deadline", { mode: "timestamp" }),
   cancellationPolicy: text("cancellation_policy"),
   refundPolicy: text("refund_policy"),
   sponsorInformation: text("sponsor_information"), // JSON string of sponsor details
-  
-  settings: json("settings").default({}), // theme, timing, etc.
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  startedAt: timestamp("started_at"),
-  completedAt: timestamp("completed_at"),
+
+  settings: text("settings").default("{}"), // JSON string for theme, timing, etc.
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .$defaultFn(() => new Date())
+    .notNull(),
+  startedAt: integer("started_at", { mode: "timestamp" }),
+  completedAt: integer("completed_at", { mode: "timestamp" }),
 });
 
-export const questions = pgTable("questions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  eventId: varchar("event_id").notNull().references(() => events.id),
+export const questions = sqliteTable("questions", {
+  id: text("id").primaryKey(),
+  eventId: text("event_id")
+    .notNull()
+    .references(() => events.id),
   type: text("type").notNull(), // multiple_choice, true_false, fill_blank, image
   question: text("question").notNull(),
-  options: json("options").default([]), // array of answer options
+  options: text("options").default("[]"), // JSON string of answer options
   correctAnswer: text("correct_answer").notNull(),
+  explanation: text("explanation"), // Explanation of the correct answer
   points: integer("points").default(100),
   timeLimit: integer("time_limit").default(30), // seconds
   difficulty: text("difficulty").default("medium"),
   category: text("category"),
   backgroundImageUrl: text("background_image_url"), // Unsplash or other background image
-  aiGenerated: boolean("ai_generated").default(false),
+  aiGenerated: integer("ai_generated", { mode: "boolean" }).default(false),
   orderIndex: integer("order_index").default(0),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .$defaultFn(() => new Date())
+    .notNull(),
 });
 
-export const teams = pgTable("teams", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  eventId: varchar("event_id").notNull().references(() => events.id),
+export const teams = sqliteTable("teams", {
+  id: text("id").primaryKey(),
+  eventId: text("event_id")
+    .notNull()
+    .references(() => events.id),
   name: text("name").notNull(),
   tableNumber: integer("table_number"),
   maxMembers: integer("max_members").default(6),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .$defaultFn(() => new Date())
+    .notNull(),
 });
 
-export const participants = pgTable("participants", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  eventId: varchar("event_id").notNull().references(() => events.id),
-  teamId: varchar("team_id").references(() => teams.id),
+export const participants = sqliteTable("participants", {
+  id: text("id").primaryKey(),
+  eventId: text("event_id")
+    .notNull()
+    .references(() => events.id),
+  teamId: text("team_id").references(() => teams.id),
   name: text("name").notNull(),
-  participantToken: varchar("participant_token").notNull().unique(), // For cookie-based auth
-  joinedAt: timestamp("joined_at").defaultNow().notNull(),
-  lastActiveAt: timestamp("last_active_at").defaultNow().notNull(),
-  isActive: boolean("is_active").default(true),
-  canSwitchTeam: boolean("can_switch_team").default(true),
+  participantToken: text("participant_token").notNull().unique(), // For cookie-based auth
+  joinedAt: integer("joined_at", { mode: "timestamp" })
+    .$defaultFn(() => new Date())
+    .notNull(),
+  lastActiveAt: integer("last_active_at", { mode: "timestamp" })
+    .$defaultFn(() => new Date())
+    .notNull(),
+  isActive: integer("is_active", { mode: "boolean" }).default(true),
+  canSwitchTeam: integer("can_switch_team", { mode: "boolean" }).default(true),
 });
 
-export const responses = pgTable("responses", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  participantId: varchar("participant_id").notNull().references(() => participants.id),
-  questionId: varchar("question_id").notNull().references(() => questions.id),
+export const responses = sqliteTable("responses", {
+  id: text("id").primaryKey(),
+  participantId: text("participant_id")
+    .notNull()
+    .references(() => participants.id),
+  questionId: text("question_id")
+    .notNull()
+    .references(() => questions.id),
   answer: text("answer").notNull(),
-  isCorrect: boolean("is_correct").notNull(),
+  isCorrect: integer("is_correct", { mode: "boolean" }).notNull(),
   points: integer("points").default(0),
   responseTime: integer("response_time"), // seconds taken to answer
   timeRemaining: integer("time_remaining"), // seconds remaining when locked
-  submittedAt: timestamp("submitted_at").defaultNow().notNull(),
+  submittedAt: integer("submitted_at", { mode: "timestamp" })
+    .$defaultFn(() => new Date())
+    .notNull(),
 });
 
-export const funFacts = pgTable("fun_facts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  eventId: varchar("event_id").notNull().references(() => events.id),
+export const funFacts = sqliteTable("fun_facts", {
+  id: text("id").primaryKey(),
+  eventId: text("event_id")
+    .notNull()
+    .references(() => events.id),
   title: text("title").notNull(),
   content: text("content").notNull(),
   orderIndex: integer("order_index").default(0),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  isActive: integer("is_active", { mode: "boolean" }).default(true),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .$defaultFn(() => new Date())
+    .notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
-  createdAt: true,
 });
 
 export const insertEventSchema = createInsertSchema(events).omit({
   id: true,
-  createdAt: true,
-  startedAt: true,
-  completedAt: true,
   qrCode: true,
 });
 
 export const insertQuestionSchema = createInsertSchema(questions).omit({
   id: true,
-  createdAt: true,
 });
 
 export const insertTeamSchema = createInsertSchema(teams).omit({
   id: true,
-  createdAt: true,
 });
 
 export const insertParticipantSchema = createInsertSchema(participants).omit({
   id: true,
-  joinedAt: true,
-  lastActiveAt: true,
   participantToken: true,
 });
 
 export const insertResponseSchema = createInsertSchema(responses).omit({
   id: true,
-  submittedAt: true,
 });
 
 export const insertFunFactSchema = createInsertSchema(funFacts).omit({
   id: true,
-  createdAt: true,
 });
 
 export type User = typeof users.$inferSelect;
@@ -186,7 +213,13 @@ export type InsertFunFact = z.infer<typeof insertFunFactSchema>;
 // Event generation request schema
 export const eventGenerationSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters"),
-  eventType: z.enum(["wine_dinner", "corporate", "party", "educational", "fundraiser"]),
+  eventType: z.enum([
+    "wine_dinner",
+    "corporate",
+    "party",
+    "educational",
+    "fundraiser",
+  ]),
   participants: z.number().min(1).max(500),
   difficulty: z.enum(["easy", "medium", "hard", "mixed"]),
 });
@@ -203,4 +236,6 @@ export const questionGenerationSchema = z.object({
   count: z.number().min(1).max(20).default(1),
 });
 
-export type QuestionGenerationRequest = z.infer<typeof questionGenerationSchema>;
+export type QuestionGenerationRequest = z.infer<
+  typeof questionGenerationSchema
+>;

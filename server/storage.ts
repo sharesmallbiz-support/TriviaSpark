@@ -1,20 +1,31 @@
-import { 
-  type User, 
-  type InsertUser, 
-  type Event, 
+/**
+ * Storage Interface and Implementation
+ *
+ * This file defines the storage interface and exports the storage instance.
+ * Mock data has been migrated to SQLite database via scripts/seed-database.mjs
+ *
+ * Usage:
+ * - Local Development: Uses DatabaseStorage with SQLite persistence
+ * - Static Build: Data extracted from database and embedded in build
+ */
+
+import {
+  type User,
+  type InsertUser,
+  type Event,
   type InsertEvent,
-  type Question, 
+  type Question,
   type InsertQuestion,
   type Team,
   type InsertTeam,
-  type Participant, 
+  type Participant,
   type InsertParticipant,
   type Response,
   type InsertResponse,
   type FunFact,
-  type InsertFunFact
+  type InsertFunFact,
 } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { DatabaseStorage } from "./database-storage";
 
 export interface IStorage {
   // User methods
@@ -22,46 +33,65 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Event methods
   getEvent(id: string): Promise<Event | undefined>;
   getEventsByHost(hostId: string): Promise<Event[]>;
   getActiveEvents(hostId: string): Promise<Event[]>;
   createEvent(event: InsertEvent): Promise<Event>;
   updateEvent(id: string, updates: Partial<Event>): Promise<Event | undefined>;
-  
+  updateEventStatus(id: string, status: string): Promise<Event | undefined>;
+
   // Question methods
   getQuestionsByEvent(eventId: string): Promise<Question[]>;
+  getQuestion(id: string): Promise<Question | undefined>;
   createQuestion(question: InsertQuestion): Promise<Question>;
   createQuestions(questions: InsertQuestion[]): Promise<Question[]>;
-  
+  updateQuestion(
+    id: string,
+    updates: Partial<Question>
+  ): Promise<Question | undefined>;
+  deleteQuestion(id: string): Promise<boolean>;
+
   // Team methods
   getTeamsByEvent(eventId: string): Promise<Team[]>;
   getTeam(id: string): Promise<Team | undefined>;
-  getTeamByNameOrTable(eventId: string, nameOrTable: string | number): Promise<Team | undefined>;
+  getTeamByNameOrTable(
+    eventId: string,
+    nameOrTable: string | number
+  ): Promise<Team | undefined>;
   createTeam(team: InsertTeam): Promise<Team>;
   updateTeam(id: string, updates: Partial<Team>): Promise<Team | undefined>;
   deleteTeam(id: string): Promise<boolean>;
-  
+
   // Participant methods
   getParticipant(id: string): Promise<Participant | undefined>;
   getParticipantByToken(token: string): Promise<Participant | undefined>;
   getParticipantsByEvent(eventId: string): Promise<Participant[]>;
   getParticipantsByTeam(teamId: string): Promise<Participant[]>;
   createParticipant(participant: InsertParticipant): Promise<Participant>;
-  updateParticipant(id: string, updates: Partial<Participant>): Promise<Participant | undefined>;
-  switchParticipantTeam(participantId: string, newTeamId: string | null): Promise<Participant | undefined>;
+  updateParticipant(
+    id: string,
+    updates: Partial<Participant>
+  ): Promise<Participant | undefined>;
+  switchParticipantTeam(
+    participantId: string,
+    newTeamId: string | null
+  ): Promise<Participant | undefined>;
   lockTeamSwitching(eventId: string): Promise<void>;
-  
+
   // Response methods
   getResponsesByParticipant(participantId: string): Promise<Response[]>;
   getResponsesByQuestion(questionId: string): Promise<Response[]>;
   createResponse(response: InsertResponse): Promise<Response>;
-  
+
   // Fun Facts methods
   getFunFactsByEvent(eventId: string): Promise<FunFact[]>;
   createFunFact(funFact: InsertFunFact): Promise<FunFact>;
-  updateFunFact(id: string, updates: Partial<FunFact>): Promise<FunFact | undefined>;
+  updateFunFact(
+    id: string,
+    updates: Partial<FunFact>
+  ): Promise<FunFact | undefined>;
   deleteFunFact(id: string): Promise<boolean>;
 
   // Analytics methods
@@ -73,874 +103,5 @@ export interface IStorage {
   }>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-  private events: Map<string, Event>;
-  private questions: Map<string, Question>;
-  private teams: Map<string, Team>;
-  private participants: Map<string, Participant>;
-  private responses: Map<string, Response>;
-  private funFacts: Map<string, FunFact>;
-
-  constructor() {
-    this.users = new Map();
-    this.events = new Map();
-    this.questions = new Map();
-    this.teams = new Map();
-    this.participants = new Map();
-    this.responses = new Map();
-    this.funFacts = new Map();
-    
-    // Initialize with demo user
-    this.initializeDemoData();
-  }
-
-  private initializeDemoData() {
-    const demoUser: User = {
-      id: "demo-user-id",
-      username: "markhazleton",
-      email: "mark@webspark.dev",
-      password: "hashed-password",
-      fullName: "Mark Hazleton",
-      createdAt: new Date(),
-    };
-    this.users.set(demoUser.id, demoUser);
-    
-    // Add Mark user for login
-    const markUser: User = {
-      id: "mark-user-id",
-      username: "mark",
-      email: "mark@triviaspark.com",
-      password: "mark123",
-      fullName: "Mark Hazleton",
-      createdAt: new Date(),
-    };
-    this.users.set(markUser.id, markUser);
-    
-    // Create seeded event for Mark with rich metadata
-    const seedEventId = "seed-event-coast-to-cascades";
-    const seedEvent: Event = {
-      id: seedEventId,
-      title: "Coast to Cascades Wine & Trivia Evening",
-      description: "An elegant evening combining Pacific Northwest wines with engaging trivia, supporting West Wichita Rotary Club's community initiatives.",
-      hostId: "mark-user-id",
-      eventType: "wine_dinner",
-      status: "draft",
-      qrCode: "rotary-cascades-2025",
-      maxParticipants: 50,
-      difficulty: "mixed",
-      
-      // Rich content and branding
-      logoUrl: "https://example.com/rotary-logo.png",
-      backgroundImageUrl: "https://example.com/wine-background.jpg",
-      eventCopy: "Experience an unforgettable evening where fine wine meets friendly competition! Join us for Coast to Cascades Wine & Trivia Night, where every sip and every answer helps support our local community. With carefully curated Pacific Northwest wines and engaging trivia questions, this elegant fundraiser promises both sophistication and fun.",
-      welcomeMessage: "Welcome to Coast to Cascades Wine & Trivia Night! We're thrilled to have you join us for this special evening of wine, wisdom, and wonderful causes. Get ready for an exciting trivia experience while supporting our community!",
-      thankYouMessage: "Thank you for participating in Coast to Cascades Wine & Trivia Night! Your involvement helps us continue supporting local charities and making a difference in our community. We hope you enjoyed the evening!",
-      
-      // Theme and styling
-      primaryColor: "#7C2D12", // wine color
-      secondaryColor: "#FEF3C7", // champagne color
-      fontFamily: "Inter",
-      
-      // Contact and social
-      contactEmail: "events@westwichitarotary.org",
-      contactPhone: "(316) 555-0123",
-      websiteUrl: "https://westwichitarotary.org",
-      socialLinks: JSON.stringify({
-        facebook: "https://facebook.com/westwichitarotary",
-        twitter: "https://twitter.com/wwrotary",
-        instagram: "https://instagram.com/westwichitarotary"
-      }),
-      
-      // Event details
-      prizeInformation: "1st Place: $500 Wine Country Gift Package\n2nd Place: $300 Local Restaurant Gift Cards\n3rd Place: $200 Wine Selection\nAll participants receive a commemorative wine glass and local business discount cards!",
-      eventRules: "• Teams of 2-6 participants\n• No smartphones or electronic devices during questions\n• Wine tasting between rounds is encouraged\n• Be respectful to all participants and volunteers\n• Have fun and support a great cause!",
-      specialInstructions: "Please arrive 30 minutes early for check-in and wine selection. Designated driver arrangements are encouraged. Business casual or cocktail attire suggested.",
-      accessibilityInfo: "The venue is wheelchair accessible with elevator access to all floors. Large print question sheets available upon request. Please contact us for any specific accommodation needs.",
-      dietaryAccommodations: "Light appetizers will be served. Vegetarian and gluten-free options available. Please contact us 48 hours in advance for specific dietary requirements.",
-      dressCode: "Business casual or cocktail attire",
-      ageRestrictions: "21+ for wine tasting, 18+ for trivia participation",
-      technicalRequirements: "No technical requirements - all materials provided",
-      
-      // Business information
-      registrationDeadline: new Date("2025-02-10T23:59:59"),
-      cancellationPolicy: "Full refund available until 72 hours before the event. After that, 50% refund is available until 24 hours before. No refunds within 24 hours of the event.",
-      refundPolicy: "Refunds processed within 5-7 business days to the original payment method. Processing fees may apply.",
-      sponsorInformation: JSON.stringify({
-        name: "Pacific Northwest Wine Distributors",
-        logoUrl: "https://example.com/sponsor-logo.png",
-        website: "https://pnwwine.com",
-        description: "Leading distributor of premium Pacific Northwest wines, proudly supporting community fundraising events throughout the region."
-      }),
-      
-      settings: {},
-      eventDate: new Date("2025-09-13"),
-      eventTime: "6:30 PM",
-      location: "Riverside Conference Center",
-      sponsoringOrganization: "West Wichita Rotary Club",
-      createdAt: new Date("2025-08-23"),
-      startedAt: null,
-      completedAt: null,
-    };
-    this.events.set(seedEventId, seedEvent);
-    
-    // Create sample questions for the seeded event
-    const questions: Question[] = [
-      {
-        id: "q1-wine-regions",
-        eventId: seedEventId,
-        type: "multiple-choice",
-        question: "Which Pacific Northwest wine region is known as Oregon's premier Pinot Noir producing area?",
-        options: ["Willamette Valley", "Columbia Valley", "Walla Walla Valley", "Yakima Valley"],
-        correctAnswer: "Willamette Valley",
-        difficulty: "medium",
-        category: "wine",
-        backgroundImageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-        points: 100,
-        timeLimit: 30,
-        orderIndex: 1,
-        aiGenerated: false,
-        createdAt: new Date(),
-      },
-      {
-        id: "q2-rotary-service",
-        eventId: seedEventId,
-        type: "multiple-choice",
-        question: "What is Rotary International's primary focus in community service?",
-        options: ["Environmental conservation", "Education and literacy", "Service Above Self", "Economic development"],
-        correctAnswer: "Service Above Self",
-        difficulty: "medium",
-        category: "rotary",
-        backgroundImageUrl: "https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-        points: 100,
-        timeLimit: 30,
-        orderIndex: 2,
-        aiGenerated: false,
-        createdAt: new Date(),
-      },
-      {
-        id: "q3-pacific-northwest",
-        eventId: seedEventId,
-        type: "multiple-choice",
-        question: "Mount Rainier, the iconic peak visible from Seattle, reaches what elevation?",
-        options: ["12,330 feet", "14,411 feet", "16,050 feet", "11,249 feet"],
-        correctAnswer: "14,411 feet",
-        difficulty: "medium",
-        category: "geography",
-        backgroundImageUrl: "https://images.unsplash.com/photo-1544427920-c49ccfb85579?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-        points: 100,
-        timeLimit: 30,
-        orderIndex: 3,
-        aiGenerated: false,
-        createdAt: new Date(),
-      },
-    ];
-    
-    questions.forEach(q => this.questions.set(q.id, q));
-    
-    // Add 10 additional Oregon Wine and Geography questions
-    const additionalQuestions: Question[] = [
-      {
-        id: "q4-oregon-wine-variety",
-        eventId: seedEventId,
-        type: "multiple-choice",
-        question: "Which grape variety is Oregon's signature and most widely planted wine grape, spanning from the Coast Range to the Cascade Mountains?",
-        options: ["Chardonnay", "Pinot Noir", "Riesling", "Cabernet Sauvignon"],
-        correctAnswer: "Pinot Noir",
-        difficulty: "medium",
-        category: "wine",
-        backgroundImageUrl: "https://images.unsplash.com/photo-1423483641154-5411ec9c0ddf?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-        points: 100,
-        timeLimit: 30,
-        orderIndex: 4,
-        aiGenerated: false,
-        createdAt: new Date(),
-      },
-      {
-        id: "q5-oregon-geographic-feature",
-        eventId: seedEventId,
-        type: "multiple-choice", 
-        question: "What major geographic feature creates the natural boundary between Oregon's wine regions and influences their climate patterns from coast to mountains?",
-        options: ["Columbia River", "Coast Range", "Cascade Mountains", "Blue Mountains"],
-        correctAnswer: "Cascade Mountains",
-        difficulty: "medium",
-        category: "geography",
-        backgroundImageUrl: "https://images.unsplash.com/photo-1618172193622-ae2d025f4032?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-        points: 100,
-        timeLimit: 30,
-        orderIndex: 5,
-        aiGenerated: false,
-        createdAt: new Date(),
-      },
-      {
-        id: "q6-oregon-wine-ava",
-        eventId: seedEventId,
-        type: "multiple-choice",
-        question: "How many American Viticultural Areas (AVAs) does Oregon currently have, making it a diverse wine region from the Pacific Coast to the Cascades?",
-        options: ["12", "18", "23", "31"],
-        correctAnswer: "23",
-        difficulty: "medium", 
-        category: "wine",
-        backgroundImageUrl: "https://images.unsplash.com/photo-1510751007277-36932aac9ebd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-        points: 100,
-        timeLimit: 30,
-        orderIndex: 6,
-        aiGenerated: false,
-        createdAt: new Date(),
-      },
-      {
-        id: "q7-rotary-oregon-service",
-        eventId: seedEventId,
-        type: "multiple-choice",
-        question: "Rotary District 5100, which covers much of Oregon, focuses on which major initiative that connects communities from coast to cascades?",
-        options: ["Water conservation projects", "Youth literacy programs", "Disaster relief coordination", "Environmental stewardship"],
-        correctAnswer: "Environmental stewardship",
-        difficulty: "medium",
-        category: "rotary", 
-        backgroundImageUrl: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-        points: 100,
-        timeLimit: 30,
-        orderIndex: 7,
-        aiGenerated: false,
-        createdAt: new Date(),
-      },
-      {
-        id: "q8-oregon-wine-soil",
-        eventId: seedEventId,
-        type: "multiple-choice",
-        question: "What ancient volcanic soil type, found from Oregon's coast to the Cascades, gives Willamette Valley wines their distinctive mineral character?",
-        options: ["Jory soil", "Nekia soil", "Willakenzie soil", "Laurelwood soil"],
-        correctAnswer: "Jory soil",
-        difficulty: "medium",
-        category: "wine",
-        backgroundImageUrl: "https://images.unsplash.com/photo-1577816919506-1c2e1ef01a6b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-        points: 100,
-        timeLimit: 30,
-        orderIndex: 8,
-        aiGenerated: false,
-        createdAt: new Date(),
-      },
-      {
-        id: "q9-oregon-climate-zone",
-        eventId: seedEventId,
-        type: "multiple-choice",
-        question: "Oregon's wine regions benefit from which climate classification that extends from the coast through the valley to the mountain foothills?",
-        options: ["Mediterranean climate", "Marine West Coast climate", "Continental climate", "Desert climate"],
-        correctAnswer: "Marine West Coast climate",
-        difficulty: "medium",
-        category: "geography",
-        backgroundImageUrl: "https://images.unsplash.com/photo-1476611338391-6f395a0c7c94?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-        points: 100,
-        timeLimit: 30,
-        orderIndex: 9,
-        aiGenerated: false,
-        createdAt: new Date(),
-      },
-      {
-        id: "q10-oregon-wine-pioneer",
-        eventId: seedEventId,
-        type: "multiple-choice",
-        question: "Which Oregon wine pioneer, who settled in the Dundee Hills in 1965, helped establish the state's reputation for world-class Pinot Noir?",
-        options: ["David Lett", "Dick Erath", "Bill Fuller", "Charles Coury"],
-        correctAnswer: "David Lett",
-        difficulty: "medium",
-        category: "wine",
-        backgroundImageUrl: "https://images.unsplash.com/photo-1474722883778-792e7990302f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-        points: 100,
-        timeLimit: 30,
-        orderIndex: 10,
-        aiGenerated: false,
-        createdAt: new Date(),
-      },
-      {
-        id: "q11-oregon-elevation-wine",
-        eventId: seedEventId,
-        type: "multiple-choice",
-        question: "At what elevation range do most Oregon vineyards thrive, taking advantage of the slope from coast to cascades for optimal growing conditions?",
-        options: ["Sea level to 200 feet", "200 to 1000 feet", "1000 to 2000 feet", "2000+ feet"],
-        correctAnswer: "200 to 1000 feet",
-        difficulty: "medium",
-        category: "geography",
-        backgroundImageUrl: "https://images.unsplash.com/photo-1533743983669-94fa5c4338ec?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-        points: 100,
-        timeLimit: 30,
-        orderIndex: 11,
-        aiGenerated: false,
-        createdAt: new Date(),
-      },
-      {
-        id: "q12-rotary-oregon-history",
-        eventId: seedEventId,
-        type: "multiple-choice",
-        question: "The first Rotary Club in Oregon was established in which city in 1909, serving as a hub for community service across the region?",
-        options: ["Salem", "Eugene", "Portland", "Medford"],
-        correctAnswer: "Portland",
-        difficulty: "medium",
-        category: "rotary",
-        backgroundImageUrl: "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-        points: 100,
-        timeLimit: 30,
-        orderIndex: 12,
-        aiGenerated: false,
-        createdAt: new Date(),
-      },
-      {
-        id: "q13-oregon-harvest-season",
-        eventId: seedEventId,
-        type: "multiple-choice",
-        question: "Oregon's wine harvest season typically runs from coast to cascades during which months, when Rotary clubs often host community fundraising events?",
-        options: ["July to August", "August to October", "September to November", "October to December"],
-        correctAnswer: "August to October",
-        difficulty: "medium",
-        category: "wine",
-        backgroundImageUrl: "https://images.unsplash.com/photo-1586370434639-0fe43b2d32d6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
-        points: 100,
-        timeLimit: 30,
-        orderIndex: 13,
-        aiGenerated: false,
-        createdAt: new Date(),
-      },
-    ];
-    
-    additionalQuestions.forEach(q => this.questions.set(q.id, q));
-    
-    // Create sample fun facts for the seeded event
-    const funFacts: FunFact[] = [
-      {
-        id: "ff1-musical-tradition",
-        eventId: seedEventId,
-        title: "Musical Holiday Tradition",
-        content: "The club hosts an annual Holiday Lunch featuring performances by the Friends University Concert Choir, a tradition started by founding member Dr. David Weber that continues nearly 40 years later! 🎵",
-        orderIndex: 1,
-        isActive: true,
-        createdAt: new Date(),
-      },
-      {
-        id: "ff2-teacher-adventures",
-        eventId: seedEventId,
-        title: "International Teacher Adventures",
-        content: "Through their RITE program, the club has sent local teachers on exchanges to Panama and Argentina while hosting international educators here in Wichita - imagine the stories they bring back! ✈️",
-        orderIndex: 2,
-        isActive: true,
-        createdAt: new Date(),
-      },
-      {
-        id: "ff3-award-powerhouse",
-        eventId: seedEventId,
-        title: "Award-Winning Powerhouse",
-        content: "In 2007-08, they swept five major district awards simultaneously, making them basically the 'overachievers' of District 5680 that year. 🏆",
-        orderIndex: 3,
-        isActive: true,
-        createdAt: new Date(),
-      },
-      {
-        id: "ff4-geography-gurus",
-        eventId: seedEventId,
-        title: "Playground Geography Gurus",
-        content: "Members maintain giant educational maps painted on school playgrounds throughout the district - they're literally putting geography education on the map! 🗺️",
-        orderIndex: 4,
-        isActive: true,
-        createdAt: new Date(),
-      },
-      {
-        id: "ff5-wine-connoisseurs",
-        eventId: seedEventId,
-        title: "Wine Connoisseurs for a Cause",
-        content: "Their signature fundraising event is an annual Wine Dinner featuring wines from around the world, proving that doing good can be deliciously fun. 🍷",
-        orderIndex: 5,
-        isActive: true,
-        createdAt: new Date(),
-      },
-      {
-        id: "ff6-bookshelf-brigade",
-        eventId: seedEventId,
-        title: "Bookshelf Building Brigade",
-        content: "They construct and deliver custom bookshelves to Title 1 schools, essentially creating mini-libraries one handmade shelf at a time. 📚",
-        orderIndex: 6,
-        isActive: true,
-        createdAt: new Date(),
-      },
-      {
-        id: "ff7-school-romance",
-        eventId: seedEventId,
-        title: "38-Year School Romance",
-        content: "Their partnership with Lawrence Elementary School has lasted longer than many marriages - talk about commitment to education! 💕",
-        orderIndex: 7,
-        isActive: true,
-        createdAt: new Date(),
-      },
-      {
-        id: "ff8-rolling-hills-regulars",
-        eventId: seedEventId,
-        title: "Rolling Hills Regulars",
-        content: "They've been meeting every Tuesday at noon at Rolling Hills Country Club for decades - the staff probably has their usual orders memorized by now. 🍽️",
-        orderIndex: 8,
-        isActive: true,
-        createdAt: new Date(),
-      },
-      {
-        id: "ff9-growing-membership",
-        eventId: seedEventId,
-        title: "From 35 to 60+",
-        content: "Started with 35 charter members in 1987 and has nearly doubled in size while maintaining that small-town feel and personal touch. 📈",
-        orderIndex: 9,
-        isActive: true,
-        createdAt: new Date(),
-      },
-      {
-        id: "ff10-weber-legacy",
-        eventId: seedEventId,
-        title: "The David Weber Legacy",
-        content: "Their student achievement awards are named after founding member Dr. David Weber, a Friends University music professor who shaped the club's educational mission - his vision still guides them today! 🎓",
-        orderIndex: 10,
-        isActive: true,
-        createdAt: new Date(),
-      }
-    ];
-    
-    funFacts.forEach(ff => this.funFacts.set(ff.id, ff));
-    
-    // Create sample teams for the seeded event
-    const teams: Team[] = [
-      {
-        id: "team-sara-team",
-        eventId: seedEventId,
-        name: "SaraTeam",
-        tableNumber: 1,
-        maxMembers: 6,
-        createdAt: new Date(),
-      },
-      {
-        id: "team-john-team",
-        eventId: seedEventId,
-        name: "JohnTeam",
-        tableNumber: 2,
-        maxMembers: 6,
-        createdAt: new Date(),
-      },
-    ];
-    
-    teams.forEach(team => this.teams.set(team.id, team));
-    
-    // Create sample participants for the seeded event
-    const participants: Participant[] = [
-      {
-        id: "participant-sara",
-        eventId: seedEventId,
-        name: "Sara",
-        teamId: "team-sara-team",
-        participantToken: "sara-token-" + randomUUID(),
-        joinedAt: new Date(),
-        lastActiveAt: new Date(),
-        isActive: true,
-        canSwitchTeam: true,
-      },
-      {
-        id: "participant-john",
-        eventId: seedEventId,
-        name: "John",
-        teamId: "team-john-team",
-        participantToken: "john-token-" + randomUUID(),
-        joinedAt: new Date(),
-        lastActiveAt: new Date(),
-        isActive: true,
-        canSwitchTeam: true,
-      },
-    ];
-    
-    participants.forEach(participant => this.participants.set(participant.id, participant));
-  }
-
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.username === username);
-  }
-
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.email === email);
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { 
-      ...insertUser, 
-      id, 
-      createdAt: new Date() 
-    };
-    this.users.set(id, user);
-    return user;
-  }
-
-  async getEvent(id: string): Promise<Event | undefined> {
-    return this.events.get(id);
-  }
-
-  async getEventsByHost(hostId: string): Promise<Event[]> {
-    return Array.from(this.events.values())
-      .filter(event => event.hostId === hostId)
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }
-
-  async getActiveEvents(hostId: string): Promise<Event[]> {
-    return Array.from(this.events.values())
-      .filter(event => event.hostId === hostId && event.status === "active");
-  }
-
-  async createEvent(insertEvent: InsertEvent): Promise<Event> {
-    const id = randomUUID();
-    const qrCode = `trivia-${id.substring(0, 8)}`;
-    const event: Event = {
-      id,
-      title: insertEvent.title,
-      qrCode,
-      createdAt: new Date(),
-      startedAt: null,
-      completedAt: null,
-      hostId: insertEvent.hostId,
-      eventType: insertEvent.eventType,
-      description: insertEvent.description || null,
-      status: insertEvent.status || "draft",
-      maxParticipants: insertEvent.maxParticipants || 50,
-      difficulty: insertEvent.difficulty || "mixed",
-      settings: insertEvent.settings || {},
-      eventDate: insertEvent.eventDate || null,
-      eventTime: insertEvent.eventTime || null,
-      location: insertEvent.location || null,
-      sponsoringOrganization: insertEvent.sponsoringOrganization || null,
-      
-      // Rich content and branding - provide defaults for nullables
-      logoUrl: insertEvent.logoUrl || null,
-      backgroundImageUrl: insertEvent.backgroundImageUrl || null,
-      eventCopy: insertEvent.eventCopy || null,
-      welcomeMessage: insertEvent.welcomeMessage || null,
-      thankYouMessage: insertEvent.thankYouMessage || null,
-      
-      // Theme and styling - provide defaults
-      primaryColor: insertEvent.primaryColor || "#7C2D12",
-      secondaryColor: insertEvent.secondaryColor || "#FEF3C7",
-      fontFamily: insertEvent.fontFamily || "Inter",
-      
-      // Contact and social
-      contactEmail: insertEvent.contactEmail || null,
-      contactPhone: insertEvent.contactPhone || null,
-      websiteUrl: insertEvent.websiteUrl || null,
-      socialLinks: insertEvent.socialLinks || null,
-      
-      // Event details
-      prizeInformation: insertEvent.prizeInformation || null,
-      eventRules: insertEvent.eventRules || null,
-      specialInstructions: insertEvent.specialInstructions || null,
-      accessibilityInfo: insertEvent.accessibilityInfo || null,
-      dietaryAccommodations: insertEvent.dietaryAccommodations || null,
-      dressCode: insertEvent.dressCode || null,
-      ageRestrictions: insertEvent.ageRestrictions || null,
-      technicalRequirements: insertEvent.technicalRequirements || null,
-      
-      // Business information
-      registrationDeadline: insertEvent.registrationDeadline || null,
-      cancellationPolicy: insertEvent.cancellationPolicy || null,
-      refundPolicy: insertEvent.refundPolicy || null,
-      sponsorInformation: insertEvent.sponsorInformation || null,
-    };
-    this.events.set(id, event);
-    return event;
-  }
-
-  async updateEvent(id: string, updates: Partial<Event>): Promise<Event | undefined> {
-    const event = this.events.get(id);
-    if (!event) return undefined;
-    
-    const updatedEvent = { ...event, ...updates };
-    this.events.set(id, updatedEvent);
-    return updatedEvent;
-  }
-
-  async updateEventStatus(id: string, status: string): Promise<Event | undefined> {
-    const event = this.events.get(id);
-    if (!event) return undefined;
-    
-    const updatedEvent = { ...event, status };
-    this.events.set(id, updatedEvent);
-    return updatedEvent;
-  }
-
-  async getQuestionsByEvent(eventId: string): Promise<Question[]> {
-    return Array.from(this.questions.values())
-      .filter(question => question.eventId === eventId)
-      .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
-  }
-
-  async createQuestion(insertQuestion: InsertQuestion): Promise<Question> {
-    const id = randomUUID();
-    const question: Question = {
-      ...insertQuestion,
-      id,
-      createdAt: new Date(),
-      points: insertQuestion.points || null,
-      difficulty: insertQuestion.difficulty || null,
-      timeLimit: insertQuestion.timeLimit || null,
-      category: insertQuestion.category || null,
-      backgroundImageUrl: insertQuestion.backgroundImageUrl || null,
-      aiGenerated: insertQuestion.aiGenerated || null,
-      orderIndex: insertQuestion.orderIndex || null,
-      options: insertQuestion.options || [],
-    };
-    this.questions.set(id, question);
-    return question;
-  }
-
-  async createQuestions(insertQuestions: InsertQuestion[]): Promise<Question[]> {
-    const questions = insertQuestions.map((insertQuestion, index) => {
-      const id = randomUUID();
-      const question: Question = {
-        ...insertQuestion,
-        id,
-        orderIndex: insertQuestion.orderIndex || index,
-        createdAt: new Date(),
-        points: insertQuestion.points || null,
-        difficulty: insertQuestion.difficulty || null,
-        timeLimit: insertQuestion.timeLimit || null,
-        category: insertQuestion.category || null,
-        backgroundImageUrl: insertQuestion.backgroundImageUrl || null,
-        aiGenerated: insertQuestion.aiGenerated || null,
-        options: insertQuestion.options || [],
-      };
-      this.questions.set(id, question);
-      return question;
-    });
-    return questions;
-  }
-
-  async getQuestion(id: string): Promise<Question | undefined> {
-    return this.questions.get(id);
-  }
-
-  async updateQuestion(id: string, updates: Partial<Question>): Promise<Question | undefined> {
-    const question = this.questions.get(id);
-    if (!question) return undefined;
-    
-    const updatedQuestion = { ...question, ...updates };
-    this.questions.set(id, updatedQuestion);
-    return updatedQuestion;
-  }
-
-  async deleteQuestion(id: string): Promise<boolean> {
-    return this.questions.delete(id);
-  }
-
-  async getParticipantsByEvent(eventId: string): Promise<Participant[]> {
-    return Array.from(this.participants.values())
-      .filter(participant => participant.eventId === eventId);
-  }
-
-  // Team methods
-  async getTeamsByEvent(eventId: string): Promise<Team[]> {
-    return Array.from(this.teams.values())
-      .filter(team => team.eventId === eventId)
-      .sort((a, b) => (a.tableNumber || 0) - (b.tableNumber || 0));
-  }
-
-  async getTeam(id: string): Promise<Team | undefined> {
-    return this.teams.get(id);
-  }
-
-  async getTeamByNameOrTable(eventId: string, nameOrTable: string | number): Promise<Team | undefined> {
-    const teams = await this.getTeamsByEvent(eventId);
-    return teams.find(team => 
-      team.name.toLowerCase() === String(nameOrTable).toLowerCase() || 
-      team.tableNumber === Number(nameOrTable)
-    );
-  }
-
-  async createTeam(insertTeam: InsertTeam): Promise<Team> {
-    const id = randomUUID();
-    const team: Team = {
-      ...insertTeam,
-      id,
-      createdAt: new Date(),
-      tableNumber: insertTeam.tableNumber || null,
-      maxMembers: insertTeam.maxMembers || 6,
-    };
-    this.teams.set(id, team);
-    return team;
-  }
-
-  async updateTeam(id: string, updates: Partial<Team>): Promise<Team | undefined> {
-    const team = this.teams.get(id);
-    if (!team) return undefined;
-    
-    const updatedTeam = { ...team, ...updates };
-    this.teams.set(id, updatedTeam);
-    return updatedTeam;
-  }
-
-  async deleteTeam(id: string): Promise<boolean> {
-    // Don't delete if there are participants
-    const participants = await this.getParticipantsByTeam(id);
-    if (participants.length > 0) return false;
-    
-    return this.teams.delete(id);
-  }
-
-  // Participant methods
-  async getParticipant(id: string): Promise<Participant | undefined> {
-    return this.participants.get(id);
-  }
-
-  async getParticipantByToken(token: string): Promise<Participant | undefined> {
-    return Array.from(this.participants.values()).find(p => p.participantToken === token);
-  }
-
-  async getParticipantsByTeam(teamId: string): Promise<Participant[]> {
-    return Array.from(this.participants.values())
-      .filter(participant => participant.teamId === teamId);
-  }
-
-  async createParticipant(insertParticipant: InsertParticipant): Promise<Participant> {
-    const id = randomUUID();
-    const participantToken = randomUUID();
-    const participant: Participant = {
-      ...insertParticipant,
-      id,
-      participantToken,
-      joinedAt: new Date(),
-      lastActiveAt: new Date(),
-      teamId: insertParticipant.teamId || null,
-      isActive: insertParticipant.isActive ?? true,
-      canSwitchTeam: insertParticipant.canSwitchTeam ?? true,
-    };
-    this.participants.set(id, participant);
-    return participant;
-  }
-
-  async updateParticipant(id: string, updates: Partial<Participant>): Promise<Participant | undefined> {
-    const participant = this.participants.get(id);
-    if (!participant) return undefined;
-    
-    const updatedParticipant = { 
-      ...participant, 
-      ...updates,
-      lastActiveAt: new Date() 
-    };
-    this.participants.set(id, updatedParticipant);
-    return updatedParticipant;
-  }
-
-  async switchParticipantTeam(participantId: string, newTeamId: string | null): Promise<Participant | undefined> {
-    const participant = this.participants.get(participantId);
-    if (!participant || !participant.canSwitchTeam) return undefined;
-    
-    // Check team capacity if joining a team
-    if (newTeamId) {
-      const team = await this.getTeam(newTeamId);
-      if (!team) return undefined;
-      
-      const teamMembers = await this.getParticipantsByTeam(newTeamId);
-      if (teamMembers.length >= (team.maxMembers || 6)) return undefined;
-    }
-    
-    return this.updateParticipant(participantId, { teamId: newTeamId });
-  }
-
-  async lockTeamSwitching(eventId: string): Promise<void> {
-    const participants = await this.getParticipantsByEvent(eventId);
-    for (const participant of participants) {
-      await this.updateParticipant(participant.id, { canSwitchTeam: false });
-    }
-  }
-
-  async getResponsesByParticipant(participantId: string): Promise<Response[]> {
-    return Array.from(this.responses.values())
-      .filter(response => response.participantId === participantId);
-  }
-
-  async getResponsesByQuestion(questionId: string): Promise<Response[]> {
-    return Array.from(this.responses.values())
-      .filter(response => response.questionId === questionId);
-  }
-
-  async createResponse(insertResponse: InsertResponse): Promise<Response> {
-    const id = randomUUID();
-    const response: Response = {
-      ...insertResponse,
-      id,
-      submittedAt: new Date(),
-      points: insertResponse.points || null,
-      responseTime: insertResponse.responseTime || null,
-      timeRemaining: insertResponse.timeRemaining || null,
-    };
-    this.responses.set(id, response);
-    return response;
-  }
-
-  async getEventStats(hostId: string): Promise<{
-    totalEvents: number;
-    totalParticipants: number;
-    totalQuestions: number;
-    averageRating: number;
-  }> {
-    const userEvents = Array.from(this.events.values())
-      .filter(event => event.hostId === hostId);
-    
-    const totalEvents = userEvents.length;
-    
-    let totalParticipants = 0;
-    for (const event of userEvents) {
-      const eventParticipants = await this.getParticipantsByEvent(event.id);
-      totalParticipants += eventParticipants.length;
-    }
-    
-    let totalQuestions = 0;
-    for (const event of userEvents) {
-      const eventQuestions = await this.getQuestionsByEvent(event.id);
-      totalQuestions += eventQuestions.filter(q => q.aiGenerated).length;
-    }
-    
-    // Mock average rating for now
-    const averageRating = 4.9;
-    
-    return {
-      totalEvents,
-      totalParticipants,
-      totalQuestions,
-      averageRating,
-    };
-  }
-
-  async getFunFactsByEvent(eventId: string): Promise<FunFact[]> {
-    return Array.from(this.funFacts.values())
-      .filter(funFact => funFact.eventId === eventId && funFact.isActive)
-      .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
-  }
-
-  async createFunFact(insertFunFact: InsertFunFact): Promise<FunFact> {
-    const id = randomUUID();
-    const funFact: FunFact = {
-      ...insertFunFact,
-      id,
-      createdAt: new Date(),
-      isActive: insertFunFact.isActive ?? true,
-      orderIndex: insertFunFact.orderIndex || 0,
-    };
-    this.funFacts.set(id, funFact);
-    return funFact;
-  }
-
-  async updateFunFact(id: string, updates: Partial<FunFact>): Promise<FunFact | undefined> {
-    const funFact = this.funFacts.get(id);
-    if (!funFact) return undefined;
-    
-    const updatedFunFact = { ...funFact, ...updates };
-    this.funFacts.set(id, updatedFunFact);
-    return updatedFunFact;
-  }
-
-  async deleteFunFact(id: string): Promise<boolean> {
-    return this.funFacts.delete(id);
-  }
-}
-
-export const storage = new MemStorage();
+// Use database storage with SQLite persistence
+export const storage = new DatabaseStorage();

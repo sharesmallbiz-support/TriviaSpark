@@ -103,9 +103,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get dashboard stats
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
-      // Using demo user for now
-      const hostId = "demo-user-id";
-      const stats = await storage.getEventStats(hostId);
+      const sessionCheck = validateSession(req);
+
+      if (!sessionCheck.valid || !sessionCheck.session) {
+        console.log("Session validation failed:", sessionCheck.error);
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const stats = await storage.getEventStats(sessionCheck.session.userId);
 
       // Return just the stats without OpenAI insights
       res.json(stats);
@@ -118,9 +123,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get AI insights for dashboard stats (separate endpoint)
   app.get("/api/dashboard/insights", async (req, res) => {
     try {
-      // Using demo user for now
-      const hostId = "demo-user-id";
-      const stats = await storage.getEventStats(hostId);
+      const sessionCheck = validateSession(req);
+
+      if (!sessionCheck.valid || !sessionCheck.session) {
+        console.log("Session validation failed:", sessionCheck.error);
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const stats = await storage.getEventStats(sessionCheck.session.userId);
 
       // Get AI insights
       const insights = await openAIService.generateInsights(stats);
@@ -143,6 +153,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const events = await storage.getEventsByHost(sessionCheck.session.userId);
+      console.log(
+        `[DEBUG] Events for user ${sessionCheck.session.userId}:`,
+        JSON.stringify(events, null, 2)
+      );
       res.json(events);
     } catch (error) {
       console.error("Error fetching events:", error);

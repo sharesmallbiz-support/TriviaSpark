@@ -1,15 +1,28 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
+/**
+ * Database Configuration - SQLite with LibSQL
+ *
+ * Local Development:
+ * - Uses file:./data/trivia.db by default
+ * - Data persists between server restarts
+ * - Full CRUD operations available
+ *
+ * Production Options:
+ * - Local SQLite: DATABASE_URL=file:./data/trivia.db
+ * - Turso Distributed: DATABASE_URL=libsql://your-db.turso.io (requires TURSO_AUTH_TOKEN)
+ *
+ * GitHub Pages: No database (static build only)
+ */
+
+import { createClient } from "@libsql/client";
+import { drizzle } from "drizzle-orm/libsql";
 import * as schema from "@shared/schema";
 
-neonConfig.webSocketConstructor = ws;
+// Use SQLite database file or Turso URL
+const DATABASE_URL = process.env.DATABASE_URL || "file:./data/trivia.db";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
+const client = createClient({
+  url: DATABASE_URL,
+  authToken: process.env.TURSO_AUTH_TOKEN, // Optional, only needed for Turso
+});
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+export const db = drizzle(client, { schema });

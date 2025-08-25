@@ -1,3 +1,17 @@
+/**
+ * TriviaSpark Server
+ *
+ * Local Development: Full-featured backend with SQLite persistence
+ * - Database: ./data/trivia.db (auto-created)
+ * - Features: WebSocket, AI integration, user auth, CRUD operations
+ * - Run: npm run dev
+ *
+ * GitHub Pages: Static site deployment (no backend)
+ * - Build: npm run build:static
+ * - Output: ./docs/ directory
+ * - Features: Demo content only, no persistence
+ */
+
 import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";

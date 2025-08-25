@@ -2,13 +2,30 @@ import { Link } from "wouter";
 import { Bell, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useQuery } from "@tanstack/react-query";
+
+type User = {
+  id: string;
+  username: string;
+  email: string;
+  fullName: string;
+};
 
 export default function Header() {
+  // Check authentication status
+  const { data: user } = useQuery<{ user: User }>({
+    queryKey: ["/api/auth/me"],
+    retry: false
+  });
+
+  // Determine home link destination based on authentication
+  const homeHref = user ? "/dashboard" : "/";
+
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link href="/">
+          <Link href={homeHref}>
             <div className="flex items-center space-x-4 cursor-pointer" data-testid="link-home">
               <div className="flex items-center">
                 {/* TriviaSpark Logo */}

@@ -872,8 +872,8 @@ function EventManage() {
         <Card className="max-w-md w-full">
           <CardContent className="text-center py-8">
             <p className="text-gray-600 mb-4">Event not found</p>
-            <Button onClick={() => setLocation("/events")} data-testid="button-back-events">
-              Back to Events
+            <Button onClick={() => setLocation("/dashboard")} data-testid="button-back-events">
+              Back to Dashboard
             </Button>
           </CardContent>
         </Card>
@@ -892,7 +892,7 @@ function EventManage() {
             <div className="flex items-center">
               <Button
                 variant="ghost"
-                onClick={() => setLocation("/events")}
+                onClick={() => setLocation("/dashboard")}
                 className="text-white hover:bg-white/10 mr-4"
                 data-testid="button-back"
               >

@@ -1,16 +1,24 @@
 import OpenAI from "openai";
-import type { EventGenerationRequest, QuestionGenerationRequest, InsertQuestion, InsertEvent } from "@shared/schema";
+import type {
+  EventGenerationRequest,
+  QuestionGenerationRequest,
+  InsertQuestion,
+  InsertEvent,
+} from "@shared/schema";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR || "default_key"
+const openai = new OpenAI({
+  apiKey:
+    process.env.OPENAI_API_KEY ||
+    process.env.OPENAI_API_KEY_ENV_VAR ||
+    "default_key",
 });
 
 export class OpenAIService {
   async generateEvent(request: EventGenerationRequest): Promise<{
     title: string;
     description: string;
-    questions: Omit<InsertQuestion, 'eventId'>[];
+    questions: Omit<InsertQuestion, "eventId">[];
     settings: any;
     eventDate?: string;
     eventTime?: string;
@@ -20,7 +28,7 @@ export class OpenAIService {
     const prompt = `Create a comprehensive trivia event based on the following requirements:
 
 Description: ${request.description}
-Event Type: ${request.eventType.replace('_', ' ')}
+Event Type: ${request.eventType.replace("_", " ")}
 Participants: ${request.participants}
 Difficulty: ${request.difficulty}
 
@@ -74,21 +82,26 @@ Respond with JSON in this format:
         messages: [
           {
             role: "system",
-            content: "You are an expert trivia event designer. Create engaging, accurate, and well-balanced trivia events. Always respond with valid JSON."
+            content:
+              "You are an expert trivia event designer. Create engaging, accurate, and well-balanced trivia events. Always respond with valid JSON.",
           },
           {
             role: "user",
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         response_format: { type: "json_object" },
         temperature: 0.8,
       });
 
-      const result = JSON.parse(response.choices[0].message.content || '{}');
-      
+      const result = JSON.parse(response.choices[0].message.content || "{}");
+
       // Validate and sanitize the response
-      if (!result.title || !result.questions || !Array.isArray(result.questions)) {
+      if (
+        !result.title ||
+        !result.questions ||
+        !Array.isArray(result.questions)
+      ) {
         throw new Error("Invalid response format from OpenAI");
       }
 
@@ -109,7 +122,7 @@ Respond with JSON in this format:
         })),
         settings: result.settings || {
           theme: "wine_elegant",
-          timing: { questionTime: 30, resultsTime: 10 }
+          timing: { questionTime: 30, resultsTime: 10 },
         },
       };
     } catch (error) {
@@ -118,17 +131,27 @@ Respond with JSON in this format:
     }
   }
 
-  async generateQuestions(request: QuestionGenerationRequest, existingQuestions: any[] = []): Promise<Omit<InsertQuestion, 'eventId'>[]> {
-    const existingQuestionsText = existingQuestions.length > 0 
-      ? `\n\nEXISTING QUESTIONS TO AVOID DUPLICATING:\n${existingQuestions.map((q, i) => `${i + 1}. ${q.question}`).join('\n')}\n\nIMPORTANT: Do NOT generate questions that are similar to or duplicate any of the existing questions listed above. Create completely new and unique questions on the same topic but with different angles, aspects, or details.`
-      : '';
+  async generateQuestions(
+    request: QuestionGenerationRequest,
+    existingQuestions: any[] = []
+  ): Promise<Omit<InsertQuestion, "eventId">[]> {
+    const existingQuestionsText =
+      existingQuestions.length > 0
+        ? `\n\nEXISTING QUESTIONS TO AVOID DUPLICATING:\n${existingQuestions
+            .map((q, i) => `${i + 1}. ${q.question}`)
+            .join(
+              "\n"
+            )}\n\nIMPORTANT: Do NOT generate questions that are similar to or duplicate any of the existing questions listed above. Create completely new and unique questions on the same topic but with different angles, aspects, or details.`
+        : "";
 
-    const prompt = `Generate ${request.count} trivia question(s) with the following specifications:
+    const prompt = `Generate ${
+      request.count
+    } trivia question(s) with the following specifications:
 
 Topic: ${request.topic}
-Type: ${request.type.replace('_', ' ')}
-Difficulty: ${request.difficulty || 'medium'}
-Category: ${request.category || 'General'}${existingQuestionsText}
+Type: ${request.type.replace("_", " ")}
+Difficulty: ${request.difficulty || "medium"}
+Category: ${request.category || "General"}${existingQuestionsText}
 
 Requirements:
 - Questions should be accurate and well-researched
@@ -150,8 +173,8 @@ Respond with JSON in this format:
       "correctAnswer": "correct answer",
       "points": 100,
       "timeLimit": 30,
-      "difficulty": "${request.difficulty || 'medium'}",
-      "category": "${request.category || 'General'}",
+      "difficulty": "${request.difficulty || "medium"}",
+      "category": "${request.category || "General"}",
       "aiGenerated": true,
       "orderIndex": 0
     }
@@ -164,19 +187,20 @@ Respond with JSON in this format:
         messages: [
           {
             role: "system",
-            content: "You are an expert trivia question writer. Create accurate, engaging questions with appropriate difficulty levels. Always respond with valid JSON."
+            content:
+              "You are an expert trivia question writer. Create accurate, engaging questions with appropriate difficulty levels. Always respond with valid JSON.",
           },
           {
             role: "user",
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         response_format: { type: "json_object" },
         temperature: 0.7,
       });
 
-      const result = JSON.parse(response.choices[0].message.content || '{}');
-      
+      const result = JSON.parse(response.choices[0].message.content || "{}");
+
       if (!result.questions || !Array.isArray(result.questions)) {
         throw new Error("Invalid response format from OpenAI");
       }
@@ -195,11 +219,25 @@ Respond with JSON in this format:
       }));
     } catch (error) {
       console.error("Error generating questions with OpenAI:", error);
-      throw new Error("Failed to generate questions: " + (error as Error).message);
+      throw new Error(
+        "Failed to generate questions: " + (error as Error).message
+      );
     }
   }
 
   async generateInsights(eventStats: any): Promise<string[]> {
+    // Check if we have a valid OpenAI API key before making the call
+    const apiKey =
+      process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY_ENV_VAR;
+    if (!apiKey || apiKey === "default_key") {
+      console.log("OpenAI API key not configured, using fallback insights");
+      return [
+        "Your trivia events are bringing people together for fun and learning!",
+        "Consider adding variety with different question types and difficulty levels.",
+        "Regular events help build a loyal participant community.",
+      ];
+    }
+
     const prompt = `Based on these trivia event statistics, generate 2-3 actionable insights for the event host:
 
 Total Events: ${eventStats.totalEvents}
@@ -223,27 +261,30 @@ Respond with JSON in this format:
         messages: [
           {
             role: "system",
-            content: "You are a trivia event analytics expert. Provide actionable insights based on event data."
+            content:
+              "You are a trivia event analytics expert. Provide actionable insights based on event data.",
           },
           {
             role: "user",
-            content: prompt
-          }
+            content: prompt,
+          },
         ],
         response_format: { type: "json_object" },
         temperature: 0.6,
       });
 
-      const result = JSON.parse(response.choices[0].message.content || '{}');
-      return result.insights || [
-        "Wine dinner events with 6-8 questions per course show 23% higher participant satisfaction.",
-        "Your events are averaging 4.8/5 stars - 15% above platform average!"
-      ];
+      const result = JSON.parse(response.choices[0].message.content || "{}");
+      return (
+        result.insights || [
+          "Wine dinner events with 6-8 questions per course show 23% higher participant satisfaction.",
+          "Your events are averaging 4.8/5 stars - 15% above platform average!",
+        ]
+      );
     } catch (error) {
       console.error("Error generating insights:", error);
       return [
         "Continue hosting engaging events to build your reputation.",
-        "Consider experimenting with different question formats for variety."
+        "Consider experimenting with different question formats for variety.",
       ];
     }
   }
@@ -253,10 +294,13 @@ Respond with JSON in this format:
       const response = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [{ role: "user", content: prompt }],
-        max_tokens: 400
+        max_tokens: 400,
       });
 
-      return response.choices[0].message.content || "Unable to generate copy at this time.";
+      return (
+        response.choices[0].message.content ||
+        "Unable to generate copy at this time."
+      );
     } catch (error) {
       console.error("Error generating copy:", error);
       throw new Error("Failed to generate copy");

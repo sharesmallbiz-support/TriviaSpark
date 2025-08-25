@@ -181,11 +181,11 @@ export default function Login() {
         <div className="text-center mt-6">
           <Button
             variant="ghost"
-            onClick={() => setLocation("/")}
+            onClick={() => setLocation("/dashboard")}
             className="text-wine-700 hover:text-wine-800"
             data-testid="button-back-home"
           >
-            ← Back to Home
+            ← Back to Dashboard
           </Button>
         </div>
       </div>

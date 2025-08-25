@@ -67,7 +67,7 @@ export default function EventManagement() {
         title: "Logged out",
         description: "You have been successfully logged out.",
       });
-      setLocation("/");
+      setLocation("/login");
     }
   });
 

@@ -1,7 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Brain, Users, QrCode, Sparkles, Trophy, Clock, Shield } from "lucide-react";
+// Tree-shake individual icons instead of importing all
+import { 
+  Brain, 
+  Users, 
+  QrCode, 
+  Sparkles, 
+  Trophy, 
+  Clock, 
+  Shield 
+} from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function Home() {
@@ -41,8 +50,7 @@ export default function Home() {
                 </Button>
                 <Button 
                   size="lg" 
-                  variant="outline"
-                  className="border-white text-white hover:bg-white/10 px-8 py-3 text-lg"
+                  className="border-2 border-white text-white bg-transparent hover:bg-white hover:text-wine-700 hover:border-white px-8 py-3 text-lg font-medium"
                   data-testid="button-learn-more"
                   onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
                 >

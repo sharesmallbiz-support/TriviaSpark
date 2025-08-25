@@ -81,7 +81,7 @@ export default function EventHost() {
             <p className="text-gray-600 mb-4" data-testid="text-event-not-found-desc">
               The event you're looking for doesn't exist or has been removed.
             </p>
-            <Link href="/">
+            <Link href="/dashboard">
               <Button data-testid="button-back-to-dashboard">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
@@ -110,7 +110,7 @@ export default function EventHost() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center space-x-4">
-          <Link href="/">
+          <Link href="/dashboard">
             <Button variant="ghost" size="sm" data-testid="button-back">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back

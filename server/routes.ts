@@ -107,16 +107,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hostId = "demo-user-id";
       const stats = await storage.getEventStats(hostId);
 
-      // Get AI insights
-      const insights = await openAIService.generateInsights(stats);
-
-      res.json({
-        ...stats,
-        insights,
-      });
+      // Return just the stats without OpenAI insights
+      res.json(stats);
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
       res.status(500).json({ error: "Failed to fetch dashboard stats" });
+    }
+  });
+
+  // Get AI insights for dashboard stats (separate endpoint)
+  app.get("/api/dashboard/insights", async (req, res) => {
+    try {
+      // Using demo user for now
+      const hostId = "demo-user-id";
+      const stats = await storage.getEventStats(hostId);
+
+      // Get AI insights
+      const insights = await openAIService.generateInsights(stats);
+
+      res.json({ insights });
+    } catch (error) {
+      console.error("Error generating insights:", error);
+      res.status(500).json({ error: "Failed to generate insights" });
     }
   });
 
@@ -830,9 +842,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get single event
+  // Demo endpoints (no authentication required for specific demo events)
   app.get("/api/events/:id", async (req, res) => {
     try {
+      const eventId = req.params.id;
+
+      // Allow demo access for specific demo events
+      if (eventId.startsWith("seed-event-")) {
+        const event = await storage.getEvent(eventId);
+        if (!event) {
+          return res.status(404).json({ error: "Event not found" });
+        }
+        return res.json(event);
+      }
+
+      // Regular authentication for non-demo events
       const sessionId = req.cookies.sessionId;
       const session = sessionId ? sessions.get(sessionId) : null;
 
@@ -840,7 +864,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Not authenticated" });
       }
 
-      const eventId = req.params.id;
       const event = await storage.getEvent(eventId);
 
       if (!event) {
@@ -856,6 +879,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching event:", error);
       res.status(500).json({ error: "Failed to fetch event" });
+    }
+  });
+
+  // Get questions for an event (demo-enabled)
+  app.get("/api/events/:id/questions", async (req, res) => {
+    try {
+      const eventId = req.params.id;
+
+      // Allow demo access for specific demo events
+      if (eventId.startsWith("seed-event-")) {
+        const event = await storage.getEvent(eventId);
+        if (!event) {
+          return res.status(404).json({ error: "Event not found" });
+        }
+        const questions = await storage.getQuestionsByEvent(eventId);
+        return res.json(questions);
+      }
+
+      // Regular authentication for non-demo events
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const event = await storage.getEvent(eventId);
+
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      // Check if user owns this event
+      if (event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const questions = await storage.getQuestionsByEvent(eventId);
+      res.json(questions);
+    } catch (error) {
+      console.error("Error fetching questions:", error);
+      res.status(500).json({ error: "Failed to fetch questions" });
+    }
+  });
+
+  // Get fun facts for an event (demo-enabled)
+  app.get("/api/events/:id/fun-facts", async (req, res) => {
+    try {
+      const eventId = req.params.id;
+
+      // Allow demo access for specific demo events
+      if (eventId.startsWith("seed-event-")) {
+        const event = await storage.getEvent(eventId);
+        if (!event) {
+          return res.status(404).json({ error: "Event not found" });
+        }
+        const funFacts = await storage.getFunFactsByEvent(eventId);
+        return res.json(funFacts);
+      }
+
+      // Regular authentication for non-demo events
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const event = await storage.getEvent(eventId);
+
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      // Check if user owns this event
+      if (event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const funFacts = await storage.getFunFactsByEvent(eventId);
+      res.json(funFacts);
+    } catch (error) {
+      console.error("Error fetching fun facts:", error);
+      res.status(500).json({ error: "Failed to fetch fun facts" });
     }
   });
 
@@ -957,65 +1064,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get questions for an event
-  app.get("/api/events/:id/questions", async (req, res) => {
-    try {
-      const sessionId = req.cookies.sessionId;
-      const session = sessionId ? sessions.get(sessionId) : null;
-
-      if (!session || session.expiresAt < Date.now()) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
-      const eventId = req.params.id;
-      const event = await storage.getEvent(eventId);
-
-      if (!event) {
-        return res.status(404).json({ error: "Event not found" });
-      }
-
-      // Check if user owns this event
-      if (event.hostId !== session.userId) {
-        return res.status(403).json({ error: "Access denied" });
-      }
-
-      const questions = await storage.getQuestionsByEvent(eventId);
-      res.json(questions);
-    } catch (error) {
-      console.error("Error fetching questions:", error);
-      res.status(500).json({ error: "Failed to fetch questions" });
-    }
-  });
-
-  // Get fun facts for an event
-  app.get("/api/events/:id/fun-facts", async (req, res) => {
-    try {
-      const sessionId = req.cookies.sessionId;
-      const session = sessionId ? sessions.get(sessionId) : null;
-
-      if (!session || session.expiresAt < Date.now()) {
-        return res.status(401).json({ error: "Not authenticated" });
-      }
-
-      const eventId = req.params.id;
-      const event = await storage.getEvent(eventId);
-
-      if (!event) {
-        return res.status(404).json({ error: "Event not found" });
-      }
-
-      // Check if user owns this event
-      if (event.hostId !== session.userId) {
-        return res.status(403).json({ error: "Access denied" });
-      }
-
-      const funFacts = await storage.getFunFactsByEvent(eventId);
-      res.json(funFacts);
-    } catch (error) {
-      console.error("Error fetching fun facts:", error);
-      res.status(500).json({ error: "Failed to fetch fun facts" });
-    }
-  });
-
   // Update a question
   app.put("/api/questions/:id", async (req, res) => {
     try {

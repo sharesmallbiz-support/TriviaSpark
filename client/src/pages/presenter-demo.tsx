@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useParams } from "wouter";
+import { useRoute } from "wouter";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,19 +7,23 @@ import { Star, Trophy, Play, ArrowRight, RotateCcw, Pause, SkipForward, ChevronR
 import { useQuery } from "@tanstack/react-query";
 // SimpleProgress component will be inline
 const SimpleProgress = ({ value, className }: { value: number; className?: string }) => (
-  <div className={`bg-gray-800 rounded-full overflow-hidden ${className}`}>
+  <div className={`w-full bg-gray-200 rounded-full h-2 ${className}`}>
     <div 
-      className="bg-current h-full transition-all duration-300 ease-out"
-      style={{ width: `${Math.max(0, Math.min(100, value))}%` }}
+      className="bg-champagne-400 h-2 rounded-full transition-all duration-300"
+      style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
     />
   </div>
 );
 
 type GameState = "waiting" | "question" | "answer" | "complete";
 
-export default function PresenterDemo() {
-  const params = useParams();
-  const eventId = params.eventId;
+interface PresenterDemoProps {
+  defaultEventId?: string;
+}
+
+export default function PresenterDemo({ defaultEventId }: PresenterDemoProps = {}) {
+  const [, params] = useRoute("/presenter-demo/:id");
+  const eventId = params?.id || defaultEventId;
   
   const [gameState, setGameState] = useState<GameState>("waiting");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -123,35 +127,6 @@ export default function PresenterDemo() {
     }
   };
 
-  // Check for authentication errors
-  const isAuthError = (error: any) => {
-    return error?.message?.includes('401') || error?.message?.includes('Not authenticated');
-  };
-
-  const hasAuthError = isAuthError(eventError) || isAuthError(questionsError) || isAuthError(funFactsError);
-
-  // Show authentication error
-  if (hasAuthError) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-wine-900 to-champagne-900 flex items-center justify-center">
-        <div className="text-white text-center max-w-md">
-          <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Star className="h-8 w-8 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold mb-4">Authentication Required</h1>
-          <p className="text-xl mb-6">Please log in to access the demo presenter.</p>
-          <Button 
-            onClick={() => window.location.href = '/login'}
-            size="lg"
-            className="bg-champagne-500 hover:bg-champagne-400 text-champagne-900 font-bold"
-          >
-            Go to Login
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   // Show loading state while any critical data is loading
   if (eventLoading || questionsLoading || funFactsLoading || !event || !questions) {
     return (
@@ -162,9 +137,9 @@ export default function PresenterDemo() {
           </div>
           <h1 className="text-4xl font-bold mb-4">Demo Presenter</h1>
           <p className="text-xl">Loading trivia preview...</p>
-          {eventError && !isAuthError(eventError) && <p className="text-red-400 mt-2">Error loading event data</p>}
-          {questionsError && !isAuthError(questionsError) && <p className="text-red-400 mt-2">Error loading questions</p>}
-          {funFactsError && !isAuthError(funFactsError) && <p className="text-red-400 mt-2">Error loading fun facts</p>}
+          {eventError && <p className="text-red-400 mt-2">Error loading event data</p>}
+          {questionsError && <p className="text-red-400 mt-2">Error loading questions</p>}
+          {funFactsError && <p className="text-red-400 mt-2">Error loading fun facts</p>}
         </div>
       </div>
     );
@@ -178,14 +153,14 @@ export default function PresenterDemo() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2">
               <Badge variant="outline" className="bg-champagne-500/20 border-champagne-400 text-champagne-200">
-                DEMO MODE
+                ✨ DEMO
               </Badge>
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-champagne-200 truncate">
                 {event?.title || 'Demo Event'}
               </h1>
             </div>
             <p className="text-xs sm:text-sm lg:text-lg text-white/80 truncate">
-              Preview Mode - No Scoring • Manual Control
+              TriviaSpark Preview • Shareable Demo • No Login Required
             </p>
           </div>
           <div className="flex items-center space-x-4 flex-shrink-0">
@@ -204,7 +179,7 @@ export default function PresenterDemo() {
               Question {currentQuestionIndex + 1} of {questions?.length || 0}
             </span>
           </div>
-          <SimpleProgress value={progress} className="h-2 bg-white/20" />
+          <SimpleProgress value={progress} className="bg-white/20" />
         </div>
       </div>
 
@@ -216,9 +191,12 @@ export default function PresenterDemo() {
             <div className="w-20 h-20 lg:w-24 lg:h-24 bg-champagne-500 rounded-full flex items-center justify-center mx-auto mb-6 lg:mb-8">
               <Play className="h-10 w-10 lg:h-12 lg:w-12 text-champagne-900" />
             </div>
-            <h2 className="text-4xl lg:text-6xl xl:text-7xl font-bold mb-4 text-champagne-200">Demo Presenter</h2>
-            <p className="text-lg lg:text-2xl xl:text-3xl text-white/80 mb-8">
-              Manual trivia presentation for event preview and demonstration
+            <h2 className="text-4xl lg:text-6xl xl:text-7xl font-bold mb-4 text-champagne-200">TriviaSpark Demo</h2>
+            <p className="text-lg lg:text-2xl xl:text-3xl text-white/80 mb-4">
+              Experience our interactive trivia platform
+            </p>
+            <p className="text-sm lg:text-lg text-champagne-300 mb-8">
+              This is a shareable demo - no login required!
             </p>
             <Button 
               onClick={handleStartGame}
@@ -260,7 +238,7 @@ export default function PresenterDemo() {
                       <div className="w-24">
                         <SimpleProgress 
                           value={timerProgress} 
-                          className={`h-2 ${
+                          className={`${
                             timeLeft <= 10 ? 'bg-red-200' : 
                             timeLeft <= 20 ? 'bg-yellow-200' : 'bg-green-200'
                           }`} 
@@ -332,6 +310,13 @@ export default function PresenterDemo() {
                     </p>
                   </div>
                 </div>
+                {currentQuestion.explanation && (
+                  <div className="mt-4 lg:mt-6 text-center">
+                    <p className="text-sm lg:text-lg text-white/80 max-w-4xl mx-auto leading-relaxed">
+                      {currentQuestion.explanation}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -366,8 +351,11 @@ export default function PresenterDemo() {
               <Trophy className="h-10 w-10 lg:h-12 lg:w-12 text-yellow-900" />
             </div>
             <h2 className="text-4xl lg:text-6xl xl:text-7xl font-bold mb-4 text-champagne-200">Demo Complete!</h2>
-            <p className="text-lg lg:text-2xl xl:text-3xl text-white/80 mb-8">
-              Trivia preview finished. Ready to host your event with TriviaSpark?
+            <p className="text-lg lg:text-2xl xl:text-3xl text-white/80 mb-4">
+              Experience the full power of TriviaSpark for your events
+            </p>
+            <p className="text-sm lg:text-lg text-champagne-300 mb-8">
+              Create engaging trivia experiences with real-time scoring, team management, and more!
             </p>
             <Button 
               onClick={handleRestart}

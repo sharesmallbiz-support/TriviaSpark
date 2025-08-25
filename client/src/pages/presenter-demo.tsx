@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "wouter";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +56,19 @@ export default function PresenterDemo() {
   const progress = questions ? ((currentQuestionIndex + 1) / questions.length) * 100 : 0;
   const timerProgress = (timeLeft / 30) * 100;
 
+  const handleStartGame = () => {
+    setGameState("question");
+    setTimeLeft(30);
+    setIsTimerActive(true);
+    setShowAnswer(false);
+  };
+
+  const handleShowAnswer = useCallback(() => {
+    setShowAnswer(true);
+    setGameState("answer");
+    setIsTimerActive(false);
+  }, []);
+
   // Timer logic
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -75,20 +88,7 @@ export default function PresenterDemo() {
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isTimerActive, timeLeft, autoAdvance, gameState]);
-
-  const handleStartGame = () => {
-    setGameState("question");
-    setTimeLeft(30);
-    setIsTimerActive(true);
-    setShowAnswer(false);
-  };
-
-  const handleShowAnswer = () => {
-    setShowAnswer(true);
-    setGameState("answer");
-    setIsTimerActive(false);
-  };
+  }, [isTimerActive, timeLeft, autoAdvance, gameState, handleShowAnswer]);
 
   const handleNextQuestion = () => {
     if (questions && currentQuestionIndex < questions.length - 1) {

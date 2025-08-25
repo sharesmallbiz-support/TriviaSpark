@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { Switch, Route } from "wouter";
+import { Switch, Route, Router } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -35,8 +35,9 @@ const Loading = () => (
 
 // Separate router for home page to prevent unnecessary providers
 function HomeRouter() {
-  // For static builds (GitHub Pages), redirect to demo
-  if (import.meta.env.PROD && window.location.hostname.includes('github.io')) {
+  // For static builds (GitHub Pages), always show the demo
+  // This is a static build, so we don't need complex detection
+  if (import.meta.env.PROD) {
     return (
       <Suspense fallback={<Loading />}>
         <StaticPresenterDemo />
@@ -107,16 +108,6 @@ function AppRouter() {
                   </WebSocketProvider>
                 )}
               </Route>
-              <Route path="/demo">
-                {() => (
-                  <StaticPresenterDemo />
-                )}
-              </Route>
-              <Route path="/presenter-demo/:id">
-                {(params) => (
-                  <StaticPresenterDemo />
-                )}
-              </Route>
               <Route component={NotFound} />
             </Switch>
           </Suspense>
@@ -127,13 +118,34 @@ function AppRouter() {
 }
 
 function App() {
+  // Configure base path for GitHub Pages - simplify this
+  const basePath = import.meta.env.PROD ? '/TriviaSpark' : '';
+
   return (
-    <Switch>
-      {/* Home page without any heavy providers to prevent reload loops */}
-      <Route path="/" component={HomeRouter} />
-      {/* All other routes with full context */}
-      <Route path="/.*" component={AppRouter} />
-    </Switch>
+    <Router base={basePath}>
+      <Switch>
+        {/* Specific routes */}
+        <Route path="/demo">
+          <QueryClientProvider client={queryClient}>
+            <Suspense fallback={<Loading />}>
+              <StaticPresenterDemo />
+            </Suspense>
+          </QueryClientProvider>
+        </Route>
+        <Route path="/presenter-demo/:id">
+          <QueryClientProvider client={queryClient}>
+            <Suspense fallback={<Loading />}>
+              <StaticPresenterDemo />
+            </Suspense>
+          </QueryClientProvider>
+        </Route>
+        {/* Home page */}
+        <Route path="/" component={HomeRouter} />
+        {/* All other routes with full context */}
+        <Route path="/:rest*" component={AppRouter} />
+      </Switch>
+      <Toaster />
+    </Router>
   );
 }
 

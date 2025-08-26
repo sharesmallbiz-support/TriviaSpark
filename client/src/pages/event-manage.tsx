@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
 import { useForm } from "react-hook-form";
-import { useWebSocketContext } from "../contexts/WebSocketContext";
-import { WebSocketStatus } from "../components/WebSocketStatus";
+
+// Debug log to confirm module loading
+console.log("event-manage.tsx module loaded!");
 import { BrandingTab } from "../components/event/BrandingTab";
 import { ContactTab } from "../components/event/ContactTab";
 import { DetailsTab } from "../components/event/DetailsTab";
@@ -16,6 +17,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  formatDateInCST, 
+  formatDateTimeInCST, 
+  getDateForInputInCST, 
+  createDateInCST 
+} from "@/lib/utils";
 import { 
   Brain, 
   ArrowLeft, 
@@ -161,8 +168,14 @@ type EventFormData = {
   sponsorInformation?: string;
 };
 
-function EventManage() {
+interface EventManageProps {
+  eventId?: string;
+}
+
+function EventManage({ eventId: propEventId }: EventManageProps = {}) {
+  console.log("EventManage component is mounting!");
   const [, params] = useRoute("/events/:id/manage");
+  console.log("Route params:", params);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -177,9 +190,6 @@ function EventManage() {
   const [answersLocked, setAnswersLocked] = useState(false);
   const [timerActive, setTimerActive] = useState(false);
   const [viewMode, setViewMode] = useState<'both' | 'presenter' | 'participant'>('both');
-  
-  // WebSocket integration
-  const { isConnected, sendMessage, connect: wsConnect, disconnect: wsDisconnect, messages } = useWebSocketContext();
   
   const [participants, setParticipants] = useState<Array<{
     id: string;
@@ -196,7 +206,9 @@ function EventManage() {
   const [funFactsText, setFunFactsText] = useState('');
   const [editingFunFacts, setEditingFunFacts] = useState(false);
 
-  const eventId = params?.id;
+  const eventId = propEventId || params?.id;
+  console.log("Extracted eventId:", eventId, "from propEventId:", propEventId, "params:", params);
+  console.log("EventManage - eventId:", eventId, "propEventId:", propEventId, "params:", params);
 
   // Get event details
   const { data: event, isLoading: eventLoading } = useQuery<Event>({
@@ -249,7 +261,7 @@ function EventManage() {
         eventType: event.eventType || "",
         maxParticipants: event.maxParticipants || 50,
         difficulty: event.difficulty || "medium",
-        eventDate: event.eventDate ? new Date(new Date(event.eventDate).getTime() + new Date(event.eventDate).getTimezoneOffset() * 60000).toISOString().split('T')[0] : "",
+        eventDate: event.eventDate ? getDateForInputInCST(event.eventDate) : "",
         eventTime: event.eventTime || "",
         location: event.location || "",
         sponsoringOrganization: event.sponsoringOrganization || ""
@@ -331,7 +343,12 @@ function EventManage() {
   });
 
   const onSubmit = (data: EventFormData) => {
-    updateEventMutation.mutate(data);
+    // Convert date string to Date object for database, ensuring CST interpretation
+    const formattedData = {
+      ...data,
+      eventDate: data.eventDate ? createDateInCST(data.eventDate, data.eventTime) : null,
+    } as any; // Type assertion to handle Date conversion
+    updateEventMutation.mutate(formattedData);
   };
 
   const handleStatusChange = (status: string) => {
@@ -354,22 +371,6 @@ function EventManage() {
     setTimeLeft(30);
     setFinalCountdown(0);
     setTimerActive(true);
-    
-    // Connect to WebSocket as host
-    if (eventId) {
-      wsConnect(eventId, 'host', 'host-user-id', 'host');
-      
-      // Broadcast dry run start
-      sendMessage({
-        type: 'event_status_change',
-        eventId,
-        data: {
-          status: 'dry_run_started',
-          message: 'Dry run has started!',
-          question: questions[0]
-        }
-      });
-    }
   };
 
   const resetQuestionState = () => {
@@ -407,19 +408,6 @@ function EventManage() {
       }
       return p;
     }));
-    
-    // Broadcast answer selection
-    if (eventId && questions[currentQuestionIndex]) {
-      sendMessage({
-        type: 'participant_answer',
-        eventId,
-        data: {
-          participantId: teamId,
-          questionId: questions[currentQuestionIndex].id,
-          selectedAnswer: answer
-        }
-      });
-    }
   };
 
   const handleLockAnswer = (teamId: string) => {
@@ -443,18 +431,6 @@ function EventManage() {
       
       // Broadcast locked answer (optional, for real multiplayer later)
       const lockedParticipant = newParticipants.find(p => p.id === teamId);
-      if (lockedParticipant && eventId && questions[currentQuestionIndex]) {
-        sendMessage({
-          type: 'lock_answer',
-          eventId,
-          data: {
-            participantId: teamId,
-            questionId: questions[currentQuestionIndex].id,
-            selectedAnswer: lockedParticipant.selectedAnswer,
-            timeRemaining: timeLeft
-          }
-        });
-      }
       
       // Check if all teams have now locked their answers
       const allLocked = newParticipants.every(p => p.answerLocked);
@@ -677,48 +653,13 @@ function EventManage() {
         setTimerActive(false);
         setAnswersLocked(true);
         
-        // Broadcast answer reveal
-        if (eventId && questions[currentQuestionIndex]) {
-          sendMessage({
-            type: 'answer_revealed',
-            eventId,
-            data: {
-              question: questions[currentQuestionIndex],
-              leaderboard: participants.map(p => ({ name: p.name, score: p.score }))
-            }
-          });
-        }
-        
         // Show answer after a brief delay
         setTimeout(() => {
           setShowAnswer(true);
         }, 1000);
       }
     }
-  }, [participants, dryRunActive, showAnswer, answersLocked, eventId, questions, currentQuestionIndex, sendMessage]);
-
-  // Handle WebSocket messages (for future multiplayer features)
-  useEffect(() => {
-    if (messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      
-      // For dry run mode, scoring is handled locally
-      // WebSocket messages can be used for real multiplayer events later
-      if (lastMessage.type === 'answer_locked' && lastMessage.data && !dryRunActive) {
-        const { participantId, score, isCorrect } = lastMessage.data;
-        
-        setParticipants(prev => prev.map(p => {
-          if (p.id === participantId) {
-            return {
-              ...p,
-              score: p.score + (score || 0) // Add the points from server
-            };
-          }
-          return p;
-        }));
-      }
-    }
-  }, [messages, dryRunActive]);
+  }, [participants, dryRunActive, showAnswer, answersLocked]);
 
   // Reset final countdown when it reaches 0
   useEffect(() => {
@@ -1388,7 +1329,7 @@ function EventManage() {
                       <Calendar className="mr-3 h-4 w-4 text-wine-600" />
                       <span className="font-medium">Date:</span>
                       <span className="ml-2" data-testid="text-info-date">
-                        {event.eventDate ? new Date(new Date(event.eventDate).getTime() + new Date(event.eventDate).getTimezoneOffset() * 60000).toLocaleDateString() : "Not set"}
+                        {event.eventDate ? formatDateInCST(event.eventDate) : "Not set"}
                       </span>
                     </div>
                     <div className="flex items-center text-sm">

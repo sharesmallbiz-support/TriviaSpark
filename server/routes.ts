@@ -8,6 +8,10 @@ import {
   insertEventSchema,
   insertParticipantSchema,
   insertTeamSchema,
+  insertFunFactSchema,
+  updateQuestionSchema,
+  bulkQuestionSchema,
+  reorderQuestionsSchema,
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -319,6 +323,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk create questions
+  app.post("/api/questions/bulk", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const { eventId, questions } = req.body;
+
+      // Validate request data
+      const validatedData = bulkQuestionSchema.parse({ eventId, questions });
+
+      // Verify event exists and user owns it
+      const event = await storage.getEvent(validatedData.eventId);
+      if (!event || event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Get existing questions to set proper order indices
+      const existingQuestions = await storage.getQuestionsByEvent(
+        validatedData.eventId
+      );
+
+      // Validate and prepare questions with proper serialization
+      const questionsToInsert = validatedData.questions.map((q, index) => ({
+        ...q,
+        eventId: validatedData.eventId,
+        orderIndex: existingQuestions.length + index,
+        options: q.options ? JSON.stringify(q.options) : null,
+      }));
+
+      const storedQuestions = await storage.createQuestions(questionsToInsert);
+
+      res.status(201).json({
+        message: `Successfully created ${storedQuestions.length} questions`,
+        questions: storedQuestions,
+      });
+    } catch (error) {
+      console.error("Error bulk creating questions:", error);
+      if (error instanceof z.ZodError) {
+        res
+          .status(400)
+          .json({ error: "Invalid question data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create questions" });
+      }
+    }
+  });
+
+  // Reorder questions in an event
+  app.put("/api/events/:id/questions/reorder", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const eventId = req.params.id;
+
+      // Validate request data
+      const validatedData = reorderQuestionsSchema.parse(req.body);
+      const { questionOrder } = validatedData;
+
+      // Verify event exists and user owns it
+      const event = await storage.getEvent(eventId);
+      if (!event || event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Update order index for each question
+      const updatePromises = questionOrder.map((questionId, index) =>
+        storage.updateQuestion(questionId, { orderIndex: index })
+      );
+
+      await Promise.all(updatePromises);
+
+      // Return updated questions in new order
+      const updatedQuestions = await storage.getQuestionsByEvent(eventId);
+
+      res.json({
+        message: "Question order updated successfully",
+        questions: updatedQuestions,
+      });
+    } catch (error) {
+      console.error("Error reordering questions:", error);
+      res.status(500).json({ error: "Failed to reorder questions" });
+    }
+  });
+
   // Start event
   app.post("/api/events/:id/start", async (req, res) => {
     try {
@@ -499,10 +597,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
-      // Get question to check answer
-      const question: any = Array.from(
-        (storage as any).questions.values()
-      ).find((q: any) => q.id === questionId);
+      // Get question to check answer using proper database lookup
+      const question = await storage.getQuestion(questionId);
 
       if (!question) {
         return res.status(404).json({ error: "Question not found" });
@@ -670,16 +766,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      // In a real app, you'd update the database here
-      // For now, we'll just return success since we're using in-memory storage
-      const user = await storage.getUser(session.userId);
-      if (!user) {
+      // Update user in database
+      const updatedUser = await storage.updateUser(session.userId, {
+        fullName,
+        email,
+        username,
+      });
+
+      if (!updatedUser) {
         return res.status(404).json({ error: "User not found" });
       }
-
-      // Update user in memory storage
-      const updatedUser = { ...user, fullName, email, username };
-      (storage as any).users.set(session.userId, updatedUser);
 
       res.json({
         user: {
@@ -824,6 +920,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error switching team:", error);
       res.status(500).json({ error: "Failed to switch team" });
+    }
+  });
+
+  // Remove inactive participants from an event
+  app.delete("/api/events/:id/participants/inactive", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const eventId = req.params.id;
+      const event = await storage.getEvent(eventId);
+
+      if (!event || event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const { inactiveThresholdMinutes = 30 } = req.query;
+      const thresholdTime = new Date(
+        Date.now() - Number(inactiveThresholdMinutes) * 60 * 1000
+      );
+
+      // Get all participants for the event
+      const participants = await storage.getParticipantsByEvent(eventId);
+
+      // Find inactive participants (no recent activity)
+      const inactiveParticipants = participants.filter(
+        (participant) =>
+          !participant.isActive ||
+          (participant.lastActiveAt && participant.lastActiveAt < thresholdTime)
+      );
+
+      // Remove inactive participants and their responses
+      let removedCount = 0;
+      for (const participant of inactiveParticipants) {
+        // Note: In a full implementation, you might want to soft-delete or archive responses
+        // For now, we'll just remove the participant record
+        const success = await storage.deleteParticipant(participant.id);
+        if (success) {
+          removedCount++;
+        }
+      }
+
+      res.json({
+        message: `Removed ${removedCount} inactive participants`,
+        removedCount,
+        thresholdMinutes: Number(inactiveThresholdMinutes),
+        remainingParticipants: participants.length - removedCount,
+      });
+    } catch (error) {
+      console.error("Error removing inactive participants:", error);
+      res.status(500).json({ error: "Failed to remove inactive participants" });
     }
   });
 
@@ -980,6 +1131,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create fun fact for an event
+  app.post("/api/events/:id/fun-facts", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const eventId = req.params.id;
+      const event = await storage.getEvent(eventId);
+
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      // Check if user owns this event
+      if (event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const validatedData = insertFunFactSchema.parse({
+        ...req.body,
+        eventId,
+      });
+
+      const funFact = await storage.createFunFact(validatedData);
+      res.status(201).json(funFact);
+    } catch (error) {
+      console.error("Error creating fun fact:", error);
+      if (error instanceof z.ZodError) {
+        res
+          .status(400)
+          .json({ error: "Invalid fun fact data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create fun fact" });
+      }
+    }
+  });
+
+  // Update fun fact
+  app.put("/api/fun-facts/:id", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const funFactId = req.params.id;
+
+      // Get fun fact to verify ownership through event
+      const funFact = await storage.getFunFact(funFactId);
+      if (!funFact) {
+        return res.status(404).json({ error: "Fun fact not found" });
+      }
+
+      // Verify user owns the event this fun fact belongs to
+      const event = await storage.getEvent(funFact.eventId);
+      if (!event || event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const updatedFunFact = await storage.updateFunFact(funFactId, req.body);
+      res.json(updatedFunFact);
+    } catch (error) {
+      console.error("Error updating fun fact:", error);
+      res.status(500).json({ error: "Failed to update fun fact" });
+    }
+  });
+
+  // Delete fun fact
+  app.delete("/api/fun-facts/:id", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const funFactId = req.params.id;
+
+      // Get fun fact to verify ownership through event
+      const funFact = await storage.getFunFact(funFactId);
+      if (!funFact) {
+        return res.status(404).json({ error: "Fun fact not found" });
+      }
+
+      // Verify user owns the event this fun fact belongs to
+      const event = await storage.getEvent(funFact.eventId);
+      if (!event || event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      await storage.deleteFunFact(funFactId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting fun fact:", error);
+      res.status(500).json({ error: "Failed to delete fun fact" });
+    }
+  });
+
   // Update event
   app.put("/api/events/:id", async (req, res) => {
     try {
@@ -1101,9 +1357,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Access denied" });
       }
 
+      // Validate update data
+      const validatedData = updateQuestionSchema.parse(req.body);
+
+      // Handle options serialization if provided
+      const updateData = {
+        ...validatedData,
+        options: validatedData.options
+          ? JSON.stringify(validatedData.options)
+          : undefined,
+      };
+
       const updatedQuestion = await storage.updateQuestion(
         questionId,
-        req.body
+        updateData
       );
       res.json(updatedQuestion);
     } catch (error) {
@@ -1173,6 +1440,344 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting question:", error);
       res.status(500).json({ error: "Failed to delete question" });
+    }
+  });
+
+  // Get event analytics
+  app.get("/api/events/:id/analytics", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const eventId = req.params.id;
+      const event = await storage.getEvent(eventId);
+
+      if (!event || event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      // Get comprehensive analytics
+      const participants = await storage.getParticipantsByEvent(eventId);
+      const teams = await storage.getTeamsByEvent(eventId);
+      const questions = await storage.getQuestionsByEvent(eventId);
+
+      // Calculate response rates and scores
+      let totalResponses = 0;
+      let correctResponses = 0;
+      let totalPoints = 0;
+      const questionPerformance = [];
+
+      for (const question of questions) {
+        const responses = await storage.getResponsesByQuestion(question.id);
+        const correctCount = responses.filter((r) => r.isCorrect).length;
+        const avgPoints =
+          responses.length > 0
+            ? responses.reduce((sum, r) => sum + (r.points || 0), 0) /
+              responses.length
+            : 0;
+
+        questionPerformance.push({
+          id: question.id,
+          question: question.question,
+          totalResponses: responses.length,
+          correctResponses: correctCount,
+          accuracy:
+            responses.length > 0 ? (correctCount / responses.length) * 100 : 0,
+          averagePoints: avgPoints,
+          difficulty: question.difficulty,
+        });
+
+        totalResponses += responses.length;
+        correctResponses += correctCount;
+        totalPoints += responses.reduce((sum, r) => sum + (r.points || 0), 0);
+      }
+
+      // Calculate team performance
+      const teamPerformance = [];
+      for (const team of teams) {
+        const teamParticipants = await storage.getParticipantsByTeam(team.id);
+        let teamPoints = 0;
+        let teamResponses = 0;
+
+        for (const participant of teamParticipants) {
+          const responses = await storage.getResponsesByParticipant(
+            participant.id
+          );
+          teamPoints += responses.reduce((sum, r) => sum + (r.points || 0), 0);
+          teamResponses += responses.length;
+        }
+
+        teamPerformance.push({
+          id: team.id,
+          name: team.name,
+          participantCount: teamParticipants.length,
+          totalPoints: teamPoints,
+          totalResponses: teamResponses,
+          averagePointsPerParticipant:
+            teamParticipants.length > 0
+              ? teamPoints / teamParticipants.length
+              : 0,
+        });
+      }
+
+      // Sort teams by performance
+      teamPerformance.sort((a, b) => b.totalPoints - a.totalPoints);
+
+      const analytics = {
+        event: {
+          id: event.id,
+          title: event.title,
+          status: event.status,
+          participantCount: participants.length,
+          teamCount: teams.length,
+          questionCount: questions.length,
+        },
+        performance: {
+          totalResponses,
+          correctResponses,
+          overallAccuracy:
+            totalResponses > 0 ? (correctResponses / totalResponses) * 100 : 0,
+          totalPoints,
+          averagePointsPerResponse:
+            totalResponses > 0 ? totalPoints / totalResponses : 0,
+        },
+        questionPerformance,
+        teamPerformance,
+      };
+
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching event analytics:", error);
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
+
+  // Get event leaderboard
+  app.get("/api/events/:id/leaderboard", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const eventId = req.params.id;
+      const event = await storage.getEvent(eventId);
+
+      if (!event || event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const { type = "teams" } = req.query;
+
+      if (type === "teams") {
+        // Team leaderboard
+        const teams = await storage.getTeamsByEvent(eventId);
+        const teamScores = [];
+
+        for (const team of teams) {
+          const teamParticipants = await storage.getParticipantsByTeam(team.id);
+          let totalPoints = 0;
+          let totalResponses = 0;
+          let correctResponses = 0;
+
+          for (const participant of teamParticipants) {
+            const responses = await storage.getResponsesByParticipant(
+              participant.id
+            );
+            totalPoints += responses.reduce(
+              (sum, r) => sum + (r.points || 0),
+              0
+            );
+            totalResponses += responses.length;
+            correctResponses += responses.filter((r) => r.isCorrect).length;
+          }
+
+          teamScores.push({
+            rank: 0, // Will be set after sorting
+            team: {
+              id: team.id,
+              name: team.name,
+              tableNumber: team.tableNumber,
+            },
+            participantCount: teamParticipants.length,
+            totalPoints,
+            totalResponses,
+            correctResponses,
+            accuracy:
+              totalResponses > 0
+                ? (correctResponses / totalResponses) * 100
+                : 0,
+            averagePointsPerParticipant:
+              teamParticipants.length > 0
+                ? totalPoints / teamParticipants.length
+                : 0,
+          });
+        }
+
+        // Sort by total points descending
+        teamScores.sort((a, b) => b.totalPoints - a.totalPoints);
+
+        // Assign ranks
+        teamScores.forEach((team, index) => {
+          team.rank = index + 1;
+        });
+
+        res.json({ type: "teams", leaderboard: teamScores });
+      } else {
+        // Individual participant leaderboard
+        const participants = await storage.getParticipantsByEvent(eventId);
+        const participantScores = [];
+
+        for (const participant of participants) {
+          const responses = await storage.getResponsesByParticipant(
+            participant.id
+          );
+          const totalPoints = responses.reduce(
+            (sum, r) => sum + (r.points || 0),
+            0
+          );
+          const correctResponses = responses.filter((r) => r.isCorrect).length;
+
+          // Get team info if participant has one
+          let team = null;
+          if (participant.teamId) {
+            team = await storage.getTeam(participant.teamId);
+          }
+
+          participantScores.push({
+            rank: 0, // Will be set after sorting
+            participant: {
+              id: participant.id,
+              name: participant.name,
+            },
+            team: team ? { id: team.id, name: team.name } : null,
+            totalPoints,
+            totalResponses: responses.length,
+            correctResponses,
+            accuracy:
+              responses.length > 0
+                ? (correctResponses / responses.length) * 100
+                : 0,
+          });
+        }
+
+        // Sort by total points descending
+        participantScores.sort((a, b) => b.totalPoints - a.totalPoints);
+
+        // Assign ranks
+        participantScores.forEach((participant, index) => {
+          participant.rank = index + 1;
+        });
+
+        res.json({ type: "participants", leaderboard: participantScores });
+      }
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+      res.status(500).json({ error: "Failed to fetch leaderboard" });
+    }
+  });
+
+  // Get question response summary
+  app.get("/api/events/:id/responses/summary", async (req, res) => {
+    try {
+      const sessionId = req.cookies.sessionId;
+      const session = sessionId ? sessions.get(sessionId) : null;
+
+      if (!session || session.expiresAt < Date.now()) {
+        return res.status(401).json({ error: "Not authenticated" });
+      }
+
+      const eventId = req.params.id;
+      const event = await storage.getEvent(eventId);
+
+      if (!event || event.hostId !== session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const questions = await storage.getQuestionsByEvent(eventId);
+      const summary = [];
+
+      for (const question of questions) {
+        const responses = await storage.getResponsesByQuestion(question.id);
+
+        // Count responses by answer
+        const answerDistribution: Record<string, number> = {};
+        let totalPoints = 0;
+        let fastestResponseTime: number | null = null;
+        let slowestResponseTime: number | null = null;
+
+        responses.forEach((response) => {
+          const answer = response.answer || "No Answer";
+          answerDistribution[answer] = (answerDistribution[answer] || 0) + 1;
+          totalPoints += response.points || 0;
+
+          if (response.responseTime) {
+            if (
+              fastestResponseTime === null ||
+              response.responseTime < fastestResponseTime
+            ) {
+              fastestResponseTime = response.responseTime;
+            }
+            if (
+              slowestResponseTime === null ||
+              response.responseTime > slowestResponseTime
+            ) {
+              slowestResponseTime = response.responseTime;
+            }
+          }
+        });
+
+        const correctCount = responses.filter((r) => r.isCorrect).length;
+
+        summary.push({
+          question: {
+            id: question.id,
+            text: question.question,
+            correctAnswer: question.correctAnswer,
+            type: question.type,
+            difficulty: question.difficulty,
+            orderIndex: question.orderIndex,
+          },
+          responses: {
+            total: responses.length,
+            correct: correctCount,
+            incorrect: responses.length - correctCount,
+            accuracy:
+              responses.length > 0
+                ? (correctCount / responses.length) * 100
+                : 0,
+          },
+          scoring: {
+            totalPoints,
+            averagePoints:
+              responses.length > 0 ? totalPoints / responses.length : 0,
+            maxPossiblePoints: responses.length * 20, // Assuming max 20 points per question
+          },
+          timing: {
+            fastestResponseTime,
+            slowestResponseTime,
+            averageResponseTime:
+              responses.length > 0 && responses.some((r) => r.responseTime)
+                ? responses
+                    .filter((r) => r.responseTime)
+                    .reduce((sum, r) => sum + r.responseTime!, 0) /
+                  responses.filter((r) => r.responseTime).length
+                : null,
+          },
+          answerDistribution,
+        });
+      }
+
+      res.json({ eventId, summary });
+    } catch (error) {
+      console.error("Error fetching response summary:", error);
+      res.status(500).json({ error: "Failed to fetch response summary" });
     }
   });
 

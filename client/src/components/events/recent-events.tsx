@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { WineIcon as Wine, Building, Cake, ChevronRight, Settings, Tv, Presentation, Monitor } from "lucide-react";
 import { Link } from "wouter";
+import { formatDateInCST } from "@/lib/utils";
 
 const getEventIcon = (eventType: string) => {
   switch (eventType) {
@@ -40,7 +41,7 @@ const formatDate = (date: string | null) => {
   if (diffDays === 1) return "Yesterday";
   if (diffDays <= 7) return `${diffDays} days ago`;
   if (diffDays <= 30) return `${Math.ceil(diffDays / 7)} week${Math.ceil(diffDays / 7) > 1 ? 's' : ''} ago`;
-  return eventDate.toLocaleDateString();
+  return formatDateInCST(eventDate);
 };
 
 export default function RecentEvents() {

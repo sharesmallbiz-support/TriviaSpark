@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { WandSparkles, Sparkles } from "lucide-react";
 import { eventGenerationSchema, type EventGenerationRequest } from "@shared/schema";
 import { useLocation } from "wouter";
+import { formatDateInCST } from "@/lib/utils";
 
 export default function EventGenerator() {
   const { toast } = useToast();
@@ -104,7 +105,7 @@ export default function EventGenerator() {
                 <div>
                   <p className="text-sm text-gray-500">Date</p>
                   <p className="font-medium" data-testid="text-event-date">
-                    {new Date(generatedEvent.event.eventDate).toLocaleDateString()}
+                    {formatDateInCST(generatedEvent.event.eventDate)}
                   </p>
                 </div>
               )}

@@ -1,5 +1,5 @@
 // Generated data from SQLite database
-// Last updated: 2025-08-25T18:04:49.937Z
+// Last updated: 2025-08-26T03:20:13.943Z
 // Database: file:./data/trivia.db
 
 export const demoEvent = {
@@ -23,7 +23,7 @@ export const demoEvent = {
   "contactEmail": "events@westwichitarotary.org",
   "contactPhone": "(316) 555-0123",
   "websiteUrl": "https://westwichitarotary.org",
-  "socialLinks": "{\"facebook\":\"https://facebook.com/westwichitarotary\",\"twitter\":\"https://twitter.com/wwrotary\",\"instagram\":\"https://instagram.com/westwichitarotary\"}",
+  "socialLinks": "{\"facebook\":\"https://www.facebook.com/rotaryofwestwichita\",\"linkedin\":\"https://www.linkedin.com/company/rotaryofwestwichita/\"}",
   "prizeInformation": "1st Place: $500 Wine Country Gift Package\\n2nd Place: $300 Local Restaurant Gift Cards\\n3rd Place: $200 Wine Selection\\nAll participants receive a commemorative wine glass and local business discount cards!",
   "eventRules": "• Teams of 2-6 participants\\n• No smartphones or electronic devices during questions\\n• Wine tasting between rounds is encouraged\\n• Be respectful to all participants and volunteers\\n• Have fun and support a great cause!",
   "specialInstructions": "Please arrive 30 minutes early for check-in and wine selection. Designated driver arrangements are encouraged. Business casual or cocktail attire suggested.",
@@ -32,16 +32,16 @@ export const demoEvent = {
   "dressCode": "Business casual or cocktail attire",
   "ageRestrictions": "21+ for wine tasting, 18+ for trivia participation",
   "technicalRequirements": "No technical requirements - all materials provided",
-  "registrationDeadline": "2025-02-10T23:59:59.000Z",
+  "registrationDeadline": "2025-09-11T04:59:59.000Z",
   "cancellationPolicy": "Full refund available until 72 hours before the event. After that, 50% refund is available until 24 hours before. No refunds within 24 hours of the event.",
   "refundPolicy": "Refunds processed within 5-7 business days to the original payment method. Processing fees may apply.",
   "sponsorInformation": "{\"name\":\"Pacific Northwest Wine Distributors\",\"logoUrl\":\"https://example.com/sponsor-logo.png\",\"website\":\"https://pnwwine.com\",\"description\":\"Leading distributor of premium Pacific Northwest wines, proudly supporting community fundraising events throughout the region.\"}",
   "settings": {},
-  "eventDate": "2025-09-13T00:00:00.000Z",
+  "eventDate": "2025-09-13T23:30:00.000Z",
   "eventTime": "6:30 PM",
   "location": "Riverside Conference Center",
   "sponsoringOrganization": "West Wichita Rotary Club",
-  "createdAt": "2025-08-23T00:00:00.000Z",
+  "createdAt": "2025-08-26T03:18:52.447Z",
   "startedAt": null,
   "completedAt": null
 };
@@ -50,7 +50,7 @@ export const demoQuestions = [
   {
     "id": "q1-wine-regions",
     "eventId": "seed-event-coast-to-cascades",
-    "type": "multiple-choice",
+    "type": "multiple_choice",
     "question": "Which Pacific Northwest wine region is known as Oregon's premier Pinot Noir producing area?",
     "options": [
       "Willamette Valley",
@@ -67,12 +67,12 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 1,
     "aiGenerated": false,
-    "createdAt": "2025-08-25T17:57:35.110Z"
+    "createdAt": "2025-08-26T03:18:52.453Z"
   },
   {
     "id": "q2-rotary-service",
     "eventId": "seed-event-coast-to-cascades",
-    "type": "multiple-choice",
+    "type": "multiple_choice",
     "question": "What is Rotary International's primary focus in community service?",
     "options": [
       "Environmental conservation",
@@ -89,12 +89,12 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 2,
     "aiGenerated": false,
-    "createdAt": "2025-08-25T17:57:35.116Z"
+    "createdAt": "2025-08-26T03:18:52.459Z"
   },
   {
     "id": "q3-pacific-northwest",
     "eventId": "seed-event-coast-to-cascades",
-    "type": "multiple-choice",
+    "type": "multiple_choice",
     "question": "Mount Rainier, the iconic peak visible from Seattle, reaches what elevation?",
     "options": [
       "12,330 feet",
@@ -111,12 +111,12 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 3,
     "aiGenerated": false,
-    "createdAt": "2025-08-25T17:57:35.121Z"
+    "createdAt": "2025-08-26T03:18:52.465Z"
   },
   {
     "id": "q4-oregon-wine-variety",
     "eventId": "seed-event-coast-to-cascades",
-    "type": "multiple-choice",
+    "type": "multiple_choice",
     "question": "Which grape variety is Oregon's signature and most widely planted wine grape, spanning from the Coast Range to the Cascade Mountains?",
     "options": [
       "Chardonnay",
@@ -133,12 +133,12 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 4,
     "aiGenerated": false,
-    "createdAt": "2025-08-25T17:57:35.126Z"
+    "createdAt": "2025-08-26T03:18:52.471Z"
   },
   {
     "id": "q5-oregon-geographic-feature",
     "eventId": "seed-event-coast-to-cascades",
-    "type": "multiple-choice",
+    "type": "multiple_choice",
     "question": "What major geographic feature creates the natural boundary between Oregon's wine regions and influences their climate patterns from coast to mountains?",
     "options": [
       "Columbia River",
@@ -155,7 +155,7 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 5,
     "aiGenerated": false,
-    "createdAt": "2025-08-25T17:57:35.132Z"
+    "createdAt": "2025-08-26T03:18:52.476Z"
   }
 ];
 
@@ -167,7 +167,7 @@ export const demoFunFacts = [
     "content": "The club hosts an annual Holiday Lunch featuring performances by the Friends University Concert Choir, a tradition started by founding member Dr. David Weber that continues nearly 40 years later! 🎵",
     "orderIndex": 1,
     "isActive": true,
-    "createdAt": "2025-08-25T17:57:35.137Z"
+    "createdAt": "2025-08-26T03:18:52.483Z"
   },
   {
     "id": "ff2-oregon-wine-facts",
@@ -176,7 +176,7 @@ export const demoFunFacts = [
     "content": "David Lett, known as 'Papa Pinot,' planted Oregon's first Pinot Noir vines in 1965 in the Dundee Hills. His 1975 Pinot Noir shocked the wine world by placing second in a blind tasting against top French Burgundies! 🍷",
     "orderIndex": 2,
     "isActive": true,
-    "createdAt": "2025-08-25T17:57:35.143Z"
+    "createdAt": "2025-08-26T03:18:52.489Z"
   },
   {
     "id": "ff3-rotary-foundation",
@@ -185,7 +185,7 @@ export const demoFunFacts = [
     "content": "The Rotary Foundation has helped immunize more than 2.5 billion children against polio since 1985, bringing the world closer to eradicating this disease completely! 💉",
     "orderIndex": 3,
     "isActive": true,
-    "createdAt": "2025-08-25T17:57:35.148Z"
+    "createdAt": "2025-08-26T03:18:52.495Z"
   },
   {
     "id": "ff4-pacific-northwest-climate",
@@ -194,7 +194,7 @@ export const demoFunFacts = [
     "content": "Oregon's Willamette Valley shares the same latitude (45°N) as Burgundy, France, which explains why Pinot Noir thrives so well in both regions! 🌍",
     "orderIndex": 4,
     "isActive": true,
-    "createdAt": "2025-08-25T17:57:35.153Z"
+    "createdAt": "2025-08-26T03:18:52.501Z"
   },
   {
     "id": "ff5-community-service",
@@ -203,7 +203,7 @@ export const demoFunFacts = [
     "content": "Rotary clubs worldwide contribute over 47 million volunteer hours annually, with members donating their time to projects ranging from literacy programs to clean water initiatives! 🤝",
     "orderIndex": 5,
     "isActive": true,
-    "createdAt": "2025-08-25T17:57:35.159Z"
+    "createdAt": "2025-08-26T03:18:52.507Z"
   }
 ];
 
@@ -230,7 +230,7 @@ export const allEvents = [
     "contactEmail": "events@westwichitarotary.org",
     "contactPhone": "(316) 555-0123",
     "websiteUrl": "https://westwichitarotary.org",
-    "socialLinks": "{\"facebook\":\"https://facebook.com/westwichitarotary\",\"twitter\":\"https://twitter.com/wwrotary\",\"instagram\":\"https://instagram.com/westwichitarotary\"}",
+    "socialLinks": "{\"facebook\":\"https://www.facebook.com/rotaryofwestwichita\",\"linkedin\":\"https://www.linkedin.com/company/rotaryofwestwichita/\"}",
     "prizeInformation": "1st Place: $500 Wine Country Gift Package\\n2nd Place: $300 Local Restaurant Gift Cards\\n3rd Place: $200 Wine Selection\\nAll participants receive a commemorative wine glass and local business discount cards!",
     "eventRules": "• Teams of 2-6 participants\\n• No smartphones or electronic devices during questions\\n• Wine tasting between rounds is encouraged\\n• Be respectful to all participants and volunteers\\n• Have fun and support a great cause!",
     "specialInstructions": "Please arrive 30 minutes early for check-in and wine selection. Designated driver arrangements are encouraged. Business casual or cocktail attire suggested.",
@@ -239,23 +239,23 @@ export const allEvents = [
     "dressCode": "Business casual or cocktail attire",
     "ageRestrictions": "21+ for wine tasting, 18+ for trivia participation",
     "technicalRequirements": "No technical requirements - all materials provided",
-    "registrationDeadline": "2025-02-10T23:59:59.000Z",
+    "registrationDeadline": "2025-09-11T04:59:59.000Z",
     "cancellationPolicy": "Full refund available until 72 hours before the event. After that, 50% refund is available until 24 hours before. No refunds within 24 hours of the event.",
     "refundPolicy": "Refunds processed within 5-7 business days to the original payment method. Processing fees may apply.",
     "sponsorInformation": "{\"name\":\"Pacific Northwest Wine Distributors\",\"logoUrl\":\"https://example.com/sponsor-logo.png\",\"website\":\"https://pnwwine.com\",\"description\":\"Leading distributor of premium Pacific Northwest wines, proudly supporting community fundraising events throughout the region.\"}",
     "settings": {},
-    "eventDate": "2025-09-13T00:00:00.000Z",
+    "eventDate": "2025-09-13T23:30:00.000Z",
     "eventTime": "6:30 PM",
     "location": "Riverside Conference Center",
     "sponsoringOrganization": "West Wichita Rotary Club",
-    "createdAt": "2025-08-23T00:00:00.000Z",
+    "createdAt": "2025-08-26T03:18:52.447Z",
     "startedAt": null,
     "completedAt": null
   }
 ];
 
 export const buildInfo = {
-  extractedAt: "2025-08-25T18:04:49.938Z",
+  extractedAt: "2025-08-26T03:20:13.943Z",
   databaseUrl: "file:./data/trivia.db",
   eventsCount: 1,
   questionsCount: 5,

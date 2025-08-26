@@ -9,11 +9,14 @@ import { Play, Pause, Users, Clock, Trophy, ArrowLeft, Calendar, MapPin, Buildin
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import QRCodeDisplay from "@/components/ui/qr-code";
+import { formatDateTimeInCST } from "@/lib/utils";
 
 export default function EventHost() {
   const [, params] = useRoute("/event/:id");
   const eventId = params?.id;
   const { toast } = useToast();
+
+  console.log("EventHost: Component mounted with eventId:", eventId);
 
   const { data: event, isLoading } = useQuery<any>({
     queryKey: ["/api/events", eventId],
@@ -33,6 +36,15 @@ export default function EventHost() {
   const { data: teams } = useQuery<any[]>({
     queryKey: ["/api/events", eventId, "teams"],
     enabled: !!eventId,
+  });
+
+  console.log("EventHost: Query states:", {
+    eventId,
+    isLoading,
+    hasEvent: !!event,
+    hasQuestions: !!questions,
+    hasParticipants: !!participants,
+    hasTeams: !!teams
   });
 
   const startEventMutation = useMutation({
@@ -95,14 +107,7 @@ export default function EventHost() {
 
   const formatEventDate = (date: string | null, time: string | null) => {
     if (!date) return "No date set";
-    const eventDate = new Date(date);
-    const dateStr = eventDate.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-    return time ? `${dateStr} at ${time}` : dateStr;
+    return formatDateTimeInCST(date);
   };
 
   return (
@@ -345,7 +350,7 @@ export default function EventHost() {
               <CardTitle data-testid="text-qr-title">Event QR Code</CardTitle>
             </CardHeader>
             <CardContent className="text-center">
-              {event.qrCode && (
+              {event.qrCode ? (
                 <>
                   <QRCodeDisplay value={`${window.location.origin}/join/${event.qrCode}`} />
                   <p className="text-sm text-gray-600 mt-4" data-testid="text-qr-code">
@@ -355,6 +360,10 @@ export default function EventHost() {
                     Participants can scan this QR code to join your event
                   </p>
                 </>
+              ) : (
+                <div className="text-gray-500 py-8" data-testid="text-no-qr-code">
+                  No QR code available for this event
+                </div>
               )}
             </CardContent>
           </Card>

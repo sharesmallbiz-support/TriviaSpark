@@ -61,6 +61,15 @@ export class DatabaseStorage implements IStorage {
     return user!;
   }
 
+  async updateUser(
+    id: string,
+    updates: Partial<User>
+  ): Promise<User | undefined> {
+    await db.update(users).set(updates).where(eq(users.id, id));
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
   // Event methods
   async getEvent(id: string): Promise<Event | undefined> {
     const [event] = await db.select().from(events).where(eq(events.id, id));
@@ -309,6 +318,11 @@ export class DatabaseStorage implements IStorage {
     return participant;
   }
 
+  async deleteParticipant(id: string): Promise<boolean> {
+    await db.delete(participants).where(eq(participants.id, id));
+    return true;
+  }
+
   async switchParticipantTeam(
     participantId: string,
     newTeamId: string | null
@@ -368,6 +382,14 @@ export class DatabaseStorage implements IStorage {
       .from(funFacts)
       .where(and(eq(funFacts.eventId, eventId), eq(funFacts.isActive, true)))
       .orderBy(asc(funFacts.orderIndex));
+  }
+
+  async getFunFact(id: string): Promise<FunFact | undefined> {
+    const [funFact] = await db
+      .select()
+      .from(funFacts)
+      .where(eq(funFacts.id, id));
+    return funFact;
   }
 
   async createFunFact(insertFunFact: InsertFunFact): Promise<FunFact> {

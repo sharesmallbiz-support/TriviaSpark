@@ -3,6 +3,7 @@ import { Bell, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useQuery } from "@tanstack/react-query";
+import { getQueryFn } from "@/lib/queryClient";
 
 type User = {
   id: string;
@@ -12,14 +13,15 @@ type User = {
 };
 
 export default function Header() {
-  // Check authentication status
-  const { data: user } = useQuery<{ user: User }>({
+  // Check authentication status (gracefully handle 401 by returning null)
+  const { data: user } = useQuery<{ user: User } | null>({
     queryKey: ["/api/auth/me"],
-    retry: false
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    retry: false,
   });
 
   // Determine home link destination based on authentication
-  const homeHref = user ? "/dashboard" : "/";
+  const homeHref = user?.user ? "/dashboard" : "/";
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">

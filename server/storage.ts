@@ -33,6 +33,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
 
   // Event methods
   getEvent(id: string): Promise<Event | undefined>;
@@ -74,6 +75,7 @@ export interface IStorage {
     id: string,
     updates: Partial<Participant>
   ): Promise<Participant | undefined>;
+  deleteParticipant(id: string): Promise<boolean>;
   switchParticipantTeam(
     participantId: string,
     newTeamId: string | null
@@ -87,6 +89,7 @@ export interface IStorage {
 
   // Fun Facts methods
   getFunFactsByEvent(eventId: string): Promise<FunFact[]>;
+  getFunFact(id: string): Promise<FunFact | undefined>;
   createFunFact(funFact: InsertFunFact): Promise<FunFact>;
   updateFunFact(
     id: string,

@@ -11,6 +11,7 @@ import { User, Mail, Phone, Calendar, Edit, Save, X } from "lucide-react";
 import { useState } from "react";
 import Header from "@/components/layout/header";
 import Footer from "@/components/layout/footer";
+import { formatDateInCST } from "@/lib/utils";
 
 type ProfileForm = {
   fullName: string;
@@ -149,7 +150,7 @@ export default function Profile() {
                   <div className="flex items-center text-sm text-gray-600">
                     <Calendar className="mr-2 h-4 w-4" />
                     <span data-testid="text-member-since">
-                      Member since {user?.user?.createdAt ? new Date(user.user.createdAt).toLocaleDateString() : 'Unknown'}
+                      Member since {user?.user?.createdAt ? formatDateInCST(user.user.createdAt) : 'Unknown'}
                     </span>
                   </div>
                 </div>

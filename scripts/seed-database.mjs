@@ -112,9 +112,8 @@ try {
       "(316) 555-0123",
       "https://westwichitarotary.org",
       JSON.stringify({
-        facebook: "https://facebook.com/westwichitarotary",
-        twitter: "https://twitter.com/wwrotary",
-        instagram: "https://instagram.com/westwichitarotary"
+        facebook: "https://www.facebook.com/rotaryofwestwichita",
+        linkedin: "https://www.linkedin.com/company/rotaryofwestwichita/"
       }),
       "1st Place: $500 Wine Country Gift Package\\n2nd Place: $300 Local Restaurant Gift Cards\\n3rd Place: $200 Wine Selection\\nAll participants receive a commemorative wine glass and local business discount cards!",
       "• Teams of 2-6 participants\\n• No smartphones or electronic devices during questions\\n• Wine tasting between rounds is encouraged\\n• Be respectful to all participants and volunteers\\n• Have fun and support a great cause!",
@@ -124,7 +123,7 @@ try {
       "Business casual or cocktail attire",
       "21+ for wine tasting, 18+ for trivia participation",
       "No technical requirements - all materials provided",
-      new Date("2025-02-10T23:59:59.000Z").getTime(),
+      new Date("2025-09-10T23:59:59-05:00").getTime(), // Registration deadline 3 days before event (CST)
       "Full refund available until 72 hours before the event. After that, 50% refund is available until 24 hours before. No refunds within 24 hours of the event.",
       "Refunds processed within 5-7 business days to the original payment method. Processing fees may apply.",
       JSON.stringify({
@@ -134,11 +133,11 @@ try {
         description: "Leading distributor of premium Pacific Northwest wines, proudly supporting community fundraising events throughout the region."
       }),
       "{}",
-      new Date("2025-09-13").getTime(),
+      new Date("2025-09-13T18:30:00-05:00").getTime(), // Event date and time in CST
       "6:30 PM",
       "Riverside Conference Center",
       "West Wichita Rotary Club",
-      new Date("2025-08-23T00:00:00.000Z").getTime(),
+      new Date().getTime(), // Use current timestamp for created_at
       null,
       null
     ]
@@ -209,7 +208,7 @@ try {
       args: [
         question.id,
         eventId,
-        "multiple-choice",
+        "multiple_choice",
         question.question,
         JSON.stringify(question.options),
         question.correctAnswer,

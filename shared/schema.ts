@@ -239,3 +239,57 @@ export const questionGenerationSchema = z.object({
 export type QuestionGenerationRequest = z.infer<
   typeof questionGenerationSchema
 >;
+
+// Question update validation schema
+export const updateQuestionSchema = z.object({
+  question: z
+    .string()
+    .min(1, "Question text is required")
+    .max(500, "Question text too long"),
+  type: z.enum(["multiple_choice", "true_false", "fill_blank", "image"]),
+  options: z.array(z.string()).optional(),
+  correctAnswer: z.string().min(1, "Correct answer is required"),
+  difficulty: z.enum(["easy", "medium", "hard"]),
+  category: z.string().optional(),
+  explanation: z.string().optional(),
+  timeLimit: z.number().positive().optional(),
+  orderIndex: z.number().nonnegative().optional(),
+  aiGenerated: z.boolean().optional(),
+});
+
+export type UpdateQuestionRequest = z.infer<typeof updateQuestionSchema>;
+
+// Bulk question creation schema
+export const bulkQuestionSchema = z.object({
+  eventId: z.string().min(1, "Event ID is required"),
+  questions: z
+    .array(
+      z.object({
+        question: z
+          .string()
+          .min(1, "Question text is required")
+          .max(500, "Question text too long"),
+        type: z.enum(["multiple_choice", "true_false", "fill_blank", "image"]),
+        options: z.array(z.string()).optional(),
+        correctAnswer: z.string().min(1, "Correct answer is required"),
+        difficulty: z.enum(["easy", "medium", "hard"]),
+        category: z.string().optional(),
+        explanation: z.string().optional(),
+        timeLimit: z.number().positive().optional(),
+        aiGenerated: z.boolean().optional(),
+      })
+    )
+    .min(1, "At least one question is required")
+    .max(50, "Too many questions"),
+});
+
+export type BulkQuestionRequest = z.infer<typeof bulkQuestionSchema>;
+
+// Question reorder schema
+export const reorderQuestionsSchema = z.object({
+  questionOrder: z
+    .array(z.string())
+    .min(1, "At least one question ID is required"),
+});
+
+export type ReorderQuestionsRequest = z.infer<typeof reorderQuestionsSchema>;

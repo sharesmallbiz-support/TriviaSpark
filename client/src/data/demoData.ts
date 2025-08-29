@@ -1,5 +1,5 @@
 // Generated data from SQLite database
-// Last updated: 2025-08-26T03:20:13.943Z
+// Last updated: 2025-08-29T22:00:09.430Z
 // Database: file:./data/trivia.db
 
 export const demoEvent = {
@@ -255,7 +255,7 @@ export const allEvents = [
 ];
 
 export const buildInfo = {
-  extractedAt: "2025-08-26T03:20:13.943Z",
+  extractedAt: "2025-08-29T22:00:09.430Z",
   databaseUrl: "file:./data/trivia.db",
   eventsCount: 1,
   questionsCount: 5,

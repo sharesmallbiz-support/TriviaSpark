@@ -11,6 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { HelpCircle, Plus, Upload } from "lucide-react";
 import { questionGenerationSchema, type QuestionGenerationRequest } from "@shared/schema";
+import { z } from "zod";
+
+// Create a form schema that matches React Hook Form expectations
+const formSchema = questionGenerationSchema.extend({
+  count: z.number().min(1).max(20), // Remove default for form validation
+});
+
+type FormData = z.infer<typeof formSchema>;
 
 export default function QuestionGenerator() {
   const { toast } = useToast();
@@ -22,20 +30,23 @@ export default function QuestionGenerator() {
     queryKey: ["/api/events"],
   });
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<QuestionGenerationRequest>({
-    resolver: zodResolver(questionGenerationSchema),
+  const form = useForm<FormData>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       eventId: "",
+      topic: "",
       type: "multiple_choice",
       difficulty: "medium",
       count: 1,
     },
   });
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = form;
 
   const generateQuestionsMutation = useMutation({
     mutationFn: async (data: QuestionGenerationRequest) => {
@@ -72,7 +83,7 @@ export default function QuestionGenerator() {
     },
   });
 
-  const onSubmit = (data: QuestionGenerationRequest) => {
+  const onSubmit = (data: FormData) => {
     generateQuestionsMutation.mutate(data);
   };
 

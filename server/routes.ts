@@ -209,7 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         res
           .status(400)
-          .json({ error: "Invalid event data", details: error.errors });
+          .json({ error: "Invalid event data", details: error.issues });
       } else {
         res.status(500).json({ error: "Failed to create event" });
       }
@@ -271,7 +271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         res
           .status(400)
-          .json({ error: "Invalid request data", details: error.errors });
+          .json({ error: "Invalid request data", details: error.issues });
       } else {
         res.status(500).json({ error: "Failed to generate event" });
       }
@@ -316,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         res
           .status(400)
-          .json({ error: "Invalid request data", details: error.errors });
+          .json({ error: "Invalid request data", details: error.issues });
       } else {
         res.status(500).json({ error: "Failed to generate questions" });
       }
@@ -368,7 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         res
           .status(400)
-          .json({ error: "Invalid question data", details: error.errors });
+          .json({ error: "Invalid question data", details: error.issues });
       } else {
         res.status(500).json({ error: "Failed to create questions" });
       }
@@ -1165,7 +1165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         res
           .status(400)
-          .json({ error: "Invalid fun fact data", details: error.errors });
+          .json({ error: "Invalid fun fact data", details: error.issues });
       } else {
         res.status(500).json({ error: "Failed to create fun fact" });
       }

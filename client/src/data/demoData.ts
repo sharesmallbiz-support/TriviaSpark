@@ -1,5 +1,5 @@
 // Generated data from SQLite database
-// Last updated: 2025-08-29T22:00:09.430Z
+// Last updated: 2025-08-29T22:10:26.792Z
 // Database: file:./data/trivia.db
 
 export const demoEvent = {
@@ -41,7 +41,7 @@ export const demoEvent = {
   "eventTime": "6:30 PM",
   "location": "Riverside Conference Center",
   "sponsoringOrganization": "West Wichita Rotary Club",
-  "createdAt": "2025-08-26T03:18:52.447Z",
+  "createdAt": "2025-08-29T22:10:15.333Z",
   "startedAt": null,
   "completedAt": null
 };
@@ -67,7 +67,7 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 1,
     "aiGenerated": false,
-    "createdAt": "2025-08-26T03:18:52.453Z"
+    "createdAt": "2025-08-29T22:10:15.338Z"
   },
   {
     "id": "q2-rotary-service",
@@ -89,7 +89,7 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 2,
     "aiGenerated": false,
-    "createdAt": "2025-08-26T03:18:52.459Z"
+    "createdAt": "2025-08-29T22:10:15.344Z"
   },
   {
     "id": "q3-pacific-northwest",
@@ -111,7 +111,7 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 3,
     "aiGenerated": false,
-    "createdAt": "2025-08-26T03:18:52.465Z"
+    "createdAt": "2025-08-29T22:10:15.350Z"
   },
   {
     "id": "q4-oregon-wine-variety",
@@ -133,7 +133,7 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 4,
     "aiGenerated": false,
-    "createdAt": "2025-08-26T03:18:52.471Z"
+    "createdAt": "2025-08-29T22:10:15.355Z"
   },
   {
     "id": "q5-oregon-geographic-feature",
@@ -155,7 +155,117 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 5,
     "aiGenerated": false,
-    "createdAt": "2025-08-26T03:18:52.476Z"
+    "createdAt": "2025-08-29T22:10:15.360Z"
+  },
+  {
+    "id": "q6-oregon-coast-lighthouse",
+    "eventId": "seed-event-coast-to-cascades",
+    "type": "multiple_choice",
+    "question": "Which iconic Oregon Coast lighthouse, featured in countless photographs, stands on a basalt headland near Florence?",
+    "options": [
+      "Yaquina Head Lighthouse",
+      "Heceta Head Lighthouse",
+      "Cape Blanco Lighthouse",
+      "Tillamook Rock Lighthouse"
+    ],
+    "correctAnswer": "Heceta Head Lighthouse",
+    "explanation": "Heceta Head Lighthouse, built in 1894, is one of the most photographed lighthouses in the world and sits dramatically on a 205-foot cliff overlooking the Pacific Ocean.",
+    "difficulty": "medium",
+    "category": "geography",
+    "backgroundImageUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
+    "points": 100,
+    "timeLimit": 30,
+    "orderIndex": 6,
+    "aiGenerated": false,
+    "createdAt": "2025-08-29T22:10:15.366Z"
+  },
+  {
+    "id": "q7-cascade-volcanic-peak",
+    "eventId": "seed-event-coast-to-cascades",
+    "type": "multiple_choice",
+    "question": "Which Cascade Mountain peak famously erupted in 1980, reducing its height by 1,314 feet?",
+    "options": [
+      "Mount Hood",
+      "Mount Bachelor",
+      "Mount St. Helens",
+      "Mount Jefferson"
+    ],
+    "correctAnswer": "Mount St. Helens",
+    "explanation": "Mount St. Helens erupted catastrophically on May 18, 1980, in the most significant volcanic event in the contiguous United States in modern times, reducing its elevation from 9,677 to 8,363 feet.",
+    "difficulty": "medium",
+    "category": "geography",
+    "backgroundImageUrl": "https://images.unsplash.com/photo-1578662996442-48f60103fc96?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
+    "points": 100,
+    "timeLimit": 30,
+    "orderIndex": 7,
+    "aiGenerated": false,
+    "createdAt": "2025-08-29T22:10:15.371Z"
+  },
+  {
+    "id": "q8-oregon-coast-haystack",
+    "eventId": "seed-event-coast-to-cascades",
+    "type": "multiple_choice",
+    "question": "The famous Haystack Rock, a 235-foot sea stack that's home to diverse tidepools, is located at which Oregon Coast beach town?",
+    "options": [
+      "Astoria",
+      "Cannon Beach",
+      "Bandon",
+      "Newport"
+    ],
+    "correctAnswer": "Cannon Beach",
+    "explanation": "Haystack Rock at Cannon Beach is one of Oregon's most recognizable landmarks and a designated Oregon Islands National Wildlife Refuge, providing habitat for seabirds and marine life.",
+    "difficulty": "medium",
+    "category": "geography",
+    "backgroundImageUrl": "https://images.unsplash.com/photo-1541555725491-80bff3948838?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
+    "points": 100,
+    "timeLimit": 30,
+    "orderIndex": 8,
+    "aiGenerated": false,
+    "createdAt": "2025-08-29T22:10:15.376Z"
+  },
+  {
+    "id": "q9-cascade-lakes-highway",
+    "eventId": "seed-event-coast-to-cascades",
+    "type": "multiple_choice",
+    "question": "The scenic Cascade Lakes Highway loops around which major Cascade peak, offering access to numerous alpine lakes and ski areas?",
+    "options": [
+      "Mount Hood",
+      "Mount Bachelor",
+      "Three Sisters",
+      "Broken Top"
+    ],
+    "correctAnswer": "Mount Bachelor",
+    "explanation": "The Cascade Lakes Highway (Century Drive) forms a scenic loop around Mount Bachelor near Bend, providing access to dozens of pristine alpine lakes and the popular Mount Bachelor Ski Area.",
+    "difficulty": "medium",
+    "category": "geography",
+    "backgroundImageUrl": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
+    "points": 100,
+    "timeLimit": 30,
+    "orderIndex": 9,
+    "aiGenerated": false,
+    "createdAt": "2025-08-29T22:10:15.382Z"
+  },
+  {
+    "id": "q10-oregon-coast-dunes",
+    "eventId": "seed-event-coast-to-cascades",
+    "type": "multiple_choice",
+    "question": "The Oregon Dunes National Recreation Area, featuring massive coastal sand dunes that reach heights up to 500 feet, stretches along the coast near which city?",
+    "options": [
+      "Lincoln City",
+      "Florence",
+      "Brookings",
+      "Seaside"
+    ],
+    "correctAnswer": "Florence",
+    "explanation": "The Oregon Dunes National Recreation Area spans 40 square miles along the coast near Florence, creating the largest expanse of coastal sand dunes in North America and a unique desert-like landscape.",
+    "difficulty": "medium",
+    "category": "geography",
+    "backgroundImageUrl": "https://images.unsplash.com/photo-1507043235143-c2b53cd9ba37?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80",
+    "points": 100,
+    "timeLimit": 30,
+    "orderIndex": 10,
+    "aiGenerated": false,
+    "createdAt": "2025-08-29T22:10:15.387Z"
   }
 ];
 
@@ -167,7 +277,7 @@ export const demoFunFacts = [
     "content": "The club hosts an annual Holiday Lunch featuring performances by the Friends University Concert Choir, a tradition started by founding member Dr. David Weber that continues nearly 40 years later! 🎵",
     "orderIndex": 1,
     "isActive": true,
-    "createdAt": "2025-08-26T03:18:52.483Z"
+    "createdAt": "2025-08-29T22:10:15.392Z"
   },
   {
     "id": "ff2-oregon-wine-facts",
@@ -176,7 +286,7 @@ export const demoFunFacts = [
     "content": "David Lett, known as 'Papa Pinot,' planted Oregon's first Pinot Noir vines in 1965 in the Dundee Hills. His 1975 Pinot Noir shocked the wine world by placing second in a blind tasting against top French Burgundies! 🍷",
     "orderIndex": 2,
     "isActive": true,
-    "createdAt": "2025-08-26T03:18:52.489Z"
+    "createdAt": "2025-08-29T22:10:15.397Z"
   },
   {
     "id": "ff3-rotary-foundation",
@@ -185,7 +295,7 @@ export const demoFunFacts = [
     "content": "The Rotary Foundation has helped immunize more than 2.5 billion children against polio since 1985, bringing the world closer to eradicating this disease completely! 💉",
     "orderIndex": 3,
     "isActive": true,
-    "createdAt": "2025-08-26T03:18:52.495Z"
+    "createdAt": "2025-08-29T22:10:15.403Z"
   },
   {
     "id": "ff4-pacific-northwest-climate",
@@ -194,7 +304,7 @@ export const demoFunFacts = [
     "content": "Oregon's Willamette Valley shares the same latitude (45°N) as Burgundy, France, which explains why Pinot Noir thrives so well in both regions! 🌍",
     "orderIndex": 4,
     "isActive": true,
-    "createdAt": "2025-08-26T03:18:52.501Z"
+    "createdAt": "2025-08-29T22:10:15.408Z"
   },
   {
     "id": "ff5-community-service",
@@ -203,7 +313,7 @@ export const demoFunFacts = [
     "content": "Rotary clubs worldwide contribute over 47 million volunteer hours annually, with members donating their time to projects ranging from literacy programs to clean water initiatives! 🤝",
     "orderIndex": 5,
     "isActive": true,
-    "createdAt": "2025-08-26T03:18:52.507Z"
+    "createdAt": "2025-08-29T22:10:15.413Z"
   }
 ];
 
@@ -248,17 +358,17 @@ export const allEvents = [
     "eventTime": "6:30 PM",
     "location": "Riverside Conference Center",
     "sponsoringOrganization": "West Wichita Rotary Club",
-    "createdAt": "2025-08-26T03:18:52.447Z",
+    "createdAt": "2025-08-29T22:10:15.333Z",
     "startedAt": null,
     "completedAt": null
   }
 ];
 
 export const buildInfo = {
-  extractedAt: "2025-08-29T22:00:09.430Z",
+  extractedAt: "2025-08-29T22:10:26.792Z",
   databaseUrl: "file:./data/trivia.db",
   eventsCount: 1,
-  questionsCount: 5,
+  questionsCount: 10,
   funFactsCount: 5,
   primaryEventId: "seed-event-coast-to-cascades",
 };

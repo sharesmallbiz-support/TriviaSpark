@@ -62,7 +62,8 @@ try {
     if (Test-Path $dbPath) {
         Remove-Item -Path $dbPath -Force
         Write-Success "Deleted existing database file"
-    } else {
+    }
+    else {
         Write-Info "No existing database found, continuing..."
     }
     
@@ -106,7 +107,8 @@ try {
             exit 1
         }
         Write-Success "Project built successfully"
-    } else {
+    }
+    else {
         Write-Info "Skipping build step as requested"
     }
     
@@ -125,7 +127,8 @@ try {
     Write-Info "   • Login with: mark / mark123"
     Write-Info "   • View questions in presenter mode"
     
-} catch {
+}
+catch {
     Write-Error "An unexpected error occurred: $_"
     exit 1
 }

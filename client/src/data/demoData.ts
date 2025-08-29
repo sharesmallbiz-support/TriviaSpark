@@ -1,5 +1,5 @@
 // Generated data from SQLite database
-// Last updated: 2025-08-29T22:10:26.792Z
+// Last updated: 2025-08-29T22:16:22.472Z
 // Database: file:./data/trivia.db
 
 export const demoEvent = {
@@ -41,7 +41,7 @@ export const demoEvent = {
   "eventTime": "6:30 PM",
   "location": "Riverside Conference Center",
   "sponsoringOrganization": "West Wichita Rotary Club",
-  "createdAt": "2025-08-29T22:10:15.333Z",
+  "createdAt": "2025-08-29T22:16:21.819Z",
   "startedAt": null,
   "completedAt": null
 };
@@ -67,7 +67,7 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 1,
     "aiGenerated": false,
-    "createdAt": "2025-08-29T22:10:15.338Z"
+    "createdAt": "2025-08-29T22:16:21.824Z"
   },
   {
     "id": "q2-rotary-service",
@@ -89,7 +89,7 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 2,
     "aiGenerated": false,
-    "createdAt": "2025-08-29T22:10:15.344Z"
+    "createdAt": "2025-08-29T22:16:21.830Z"
   },
   {
     "id": "q3-pacific-northwest",
@@ -111,7 +111,7 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 3,
     "aiGenerated": false,
-    "createdAt": "2025-08-29T22:10:15.350Z"
+    "createdAt": "2025-08-29T22:16:21.835Z"
   },
   {
     "id": "q4-oregon-wine-variety",
@@ -133,7 +133,7 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 4,
     "aiGenerated": false,
-    "createdAt": "2025-08-29T22:10:15.355Z"
+    "createdAt": "2025-08-29T22:16:21.840Z"
   },
   {
     "id": "q5-oregon-geographic-feature",
@@ -155,7 +155,7 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 5,
     "aiGenerated": false,
-    "createdAt": "2025-08-29T22:10:15.360Z"
+    "createdAt": "2025-08-29T22:16:21.846Z"
   },
   {
     "id": "q6-oregon-coast-lighthouse",
@@ -177,7 +177,7 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 6,
     "aiGenerated": false,
-    "createdAt": "2025-08-29T22:10:15.366Z"
+    "createdAt": "2025-08-29T22:16:21.851Z"
   },
   {
     "id": "q7-cascade-volcanic-peak",
@@ -199,7 +199,7 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 7,
     "aiGenerated": false,
-    "createdAt": "2025-08-29T22:10:15.371Z"
+    "createdAt": "2025-08-29T22:16:21.856Z"
   },
   {
     "id": "q8-oregon-coast-haystack",
@@ -221,7 +221,7 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 8,
     "aiGenerated": false,
-    "createdAt": "2025-08-29T22:10:15.376Z"
+    "createdAt": "2025-08-29T22:16:21.862Z"
   },
   {
     "id": "q9-cascade-lakes-highway",
@@ -243,7 +243,7 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 9,
     "aiGenerated": false,
-    "createdAt": "2025-08-29T22:10:15.382Z"
+    "createdAt": "2025-08-29T22:16:21.867Z"
   },
   {
     "id": "q10-oregon-coast-dunes",
@@ -265,7 +265,7 @@ export const demoQuestions = [
     "timeLimit": 30,
     "orderIndex": 10,
     "aiGenerated": false,
-    "createdAt": "2025-08-29T22:10:15.387Z"
+    "createdAt": "2025-08-29T22:16:21.873Z"
   }
 ];
 
@@ -277,7 +277,7 @@ export const demoFunFacts = [
     "content": "The club hosts an annual Holiday Lunch featuring performances by the Friends University Concert Choir, a tradition started by founding member Dr. David Weber that continues nearly 40 years later! 🎵",
     "orderIndex": 1,
     "isActive": true,
-    "createdAt": "2025-08-29T22:10:15.392Z"
+    "createdAt": "2025-08-29T22:16:21.878Z"
   },
   {
     "id": "ff2-oregon-wine-facts",
@@ -286,7 +286,7 @@ export const demoFunFacts = [
     "content": "David Lett, known as 'Papa Pinot,' planted Oregon's first Pinot Noir vines in 1965 in the Dundee Hills. His 1975 Pinot Noir shocked the wine world by placing second in a blind tasting against top French Burgundies! 🍷",
     "orderIndex": 2,
     "isActive": true,
-    "createdAt": "2025-08-29T22:10:15.397Z"
+    "createdAt": "2025-08-29T22:16:21.883Z"
   },
   {
     "id": "ff3-rotary-foundation",
@@ -295,7 +295,7 @@ export const demoFunFacts = [
     "content": "The Rotary Foundation has helped immunize more than 2.5 billion children against polio since 1985, bringing the world closer to eradicating this disease completely! 💉",
     "orderIndex": 3,
     "isActive": true,
-    "createdAt": "2025-08-29T22:10:15.403Z"
+    "createdAt": "2025-08-29T22:16:21.888Z"
   },
   {
     "id": "ff4-pacific-northwest-climate",
@@ -304,7 +304,7 @@ export const demoFunFacts = [
     "content": "Oregon's Willamette Valley shares the same latitude (45°N) as Burgundy, France, which explains why Pinot Noir thrives so well in both regions! 🌍",
     "orderIndex": 4,
     "isActive": true,
-    "createdAt": "2025-08-29T22:10:15.408Z"
+    "createdAt": "2025-08-29T22:16:21.894Z"
   },
   {
     "id": "ff5-community-service",
@@ -313,7 +313,7 @@ export const demoFunFacts = [
     "content": "Rotary clubs worldwide contribute over 47 million volunteer hours annually, with members donating their time to projects ranging from literacy programs to clean water initiatives! 🤝",
     "orderIndex": 5,
     "isActive": true,
-    "createdAt": "2025-08-29T22:10:15.413Z"
+    "createdAt": "2025-08-29T22:16:21.899Z"
   }
 ];
 
@@ -358,14 +358,14 @@ export const allEvents = [
     "eventTime": "6:30 PM",
     "location": "Riverside Conference Center",
     "sponsoringOrganization": "West Wichita Rotary Club",
-    "createdAt": "2025-08-29T22:10:15.333Z",
+    "createdAt": "2025-08-29T22:16:21.819Z",
     "startedAt": null,
     "completedAt": null
   }
 ];
 
 export const buildInfo = {
-  extractedAt: "2025-08-29T22:10:26.792Z",
+  extractedAt: "2025-08-29T22:16:22.473Z",
   databaseUrl: "file:./data/trivia.db",
   eventsCount: 1,
   questionsCount: 10,
